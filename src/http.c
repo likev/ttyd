@@ -25,17 +25,46 @@ static int send_unauthorized(struct lws *wsi, unsigned int code, enum lws_token_
   return lws_http_transaction_completed(wsi) ? AUTH_FAIL : AUTH_ERROR;
 }
 
+static int send_too_many_requests(struct lws *wsi) {
+  unsigned char buffer[1024 + LWS_PRE], *p, *end;
+  p = buffer + LWS_PRE;
+  end = p + sizeof(buffer) - LWS_PRE;
+
+  if (lws_add_http_header_status(wsi, 429, &p, end) ||
+      lws_add_http_header_content_length(wsi, 0, &p, end) || lws_finalize_http_header(wsi, &p, end) ||
+      lws_write(wsi, buffer + LWS_PRE, p - (buffer + LWS_PRE), LWS_WRITE_HTTP_HEADERS) < 0)
+    return AUTH_FAIL;
+
+  return lws_http_transaction_completed(wsi) ? AUTH_FAIL : AUTH_ERROR;
+}
+
 static int check_auth(struct lws *wsi, struct pss_http *pss) {
+  char rip[50] = "";
+  if (server->rate_limit && (server->credential != NULL || server->auth_header != NULL)) {
+    lws_get_peer_simple(lws_get_network_wsi(wsi), rip, sizeof(rip));
+    if (is_ip_blocked(rip)) {
+      return send_too_many_requests(wsi);
+    }
+  }
+
   if (server->auth_header != NULL) {
     if (lws_hdr_custom_length(wsi, server->auth_header, strlen(server->auth_header)) > 0) return AUTH_OK;
+    if (server->rate_limit) {
+      if (rip[0] == '\0') lws_get_peer_simple(lws_get_network_wsi(wsi), rip, sizeof(rip));
+      add_failed_attempt(rip);
+    }
     return send_unauthorized(wsi, HTTP_STATUS_PROXY_AUTH_REQUIRED, WSI_TOKEN_HTTP_PROXY_AUTHENTICATE);
   }
 
-  if(server->credential != NULL) {
+  if (server->credential != NULL) {
     char buf[256];
     int len = lws_hdr_copy(wsi, buf, sizeof(buf), WSI_TOKEN_HTTP_AUTHORIZATION);
     if (len >= 7 && strstr(buf, "Basic ")) {
       if (!strcmp(buf + 6, server->credential)) return AUTH_OK;
+    }
+    if (server->rate_limit) {
+      if (rip[0] == '\0') lws_get_peer_simple(lws_get_network_wsi(wsi), rip, sizeof(rip));
+      add_failed_attempt(rip);
     }
     return send_unauthorized(wsi, HTTP_STATUS_UNAUTHORIZED, WSI_TOKEN_HTTP_WWW_AUTHENTICATE);
   }

@@ -72,6 +72,7 @@ static const struct option options[] = {{"port", required_argument, NULL, 'p'},
                                         {"ssl-ca", required_argument, NULL, 'A'},
                                         {"url-arg", no_argument, NULL, 'a'},
                                         {"writable", no_argument, NULL, 'W'},
+                                        {"rate-limit", required_argument, NULL, 'r'},
                                         {"terminal-type", required_argument, NULL, 'T'},
                                         {"client-option", required_argument, NULL, 't'},
                                         {"check-origin", no_argument, NULL, 'O'},
@@ -83,7 +84,7 @@ static const struct option options[] = {{"port", required_argument, NULL, 'p'},
                                         {"version", no_argument, NULL, 'v'},
                                         {"help", no_argument, NULL, 'h'},
                                         {NULL, 0, 0, 0}};
-static const char *opt_string = "p:i:U:c:H:u:g:s:w:I:b:P:6aSC:K:A:Wt:T:Om:oqBd:vh";
+static const char *opt_string = "p:i:U:c:H:u:g:s:w:I:b:P:6aSC:K:A:Wt:T:Om:oqBd:vhr:";
 
 static void print_help() {
   // clang-format off
@@ -104,6 +105,7 @@ static void print_help() {
           "    -w, --cwd               Working directory to be set for the child program\n"
           "    -a, --url-arg           Allow client to send command line arguments in URL (eg: http://localhost:7681?arg=foo&arg=bar)\n"
           "    -W, --writable          Allow clients to write to the TTY (readonly by default)\n"
+          "    -r, --rate-limit        Enable/disable IP rate-limiting for failed auth (default: true, format: true/false)\n"
           "    -t, --client-option     Send option to client (format: key=value), repeat to add more options\n"
           "    -T, --terminal-type     Terminal type to report, default: xterm-256color\n"
           "    -O, --check-origin      Do not allow websocket connection from different origin\n"
@@ -158,6 +160,49 @@ static void print_config() {
   if (!server->writable) lwsl_notice("The --writable option is not set, will start in readonly mode");
 }
 
+void add_failed_attempt(const char *ip) {
+  if (ip == NULL || ip[0] == '\0') return;
+
+  failed_attempt_t *attempt = xmalloc(sizeof(failed_attempt_t));
+  strncpy(attempt->ip, ip, sizeof(attempt->ip) - 1);
+  attempt->ip[sizeof(attempt->ip) - 1] = '\0';
+  attempt->timestamp = time(NULL);
+  attempt->next = server->failed_attempts;
+  server->failed_attempts = attempt;
+
+  lwsl_warn("Added failed login attempt from IP: %s\n", ip);
+}
+
+bool is_ip_blocked(const char *ip) {
+  if (ip == NULL || ip[0] == '\0') return false;
+
+  time_t now = time(NULL);
+  time_t cutoff = now - 300; // 5 minutes ago
+
+  failed_attempt_t **curr = &server->failed_attempts;
+  int count = 0;
+
+  while (*curr != NULL) {
+    failed_attempt_t *entry = *curr;
+    if (entry->timestamp < cutoff) {
+      *curr = entry->next;
+      free(entry);
+    } else {
+      if (strcmp(entry->ip, ip) == 0) {
+        count++;
+      }
+      curr = &entry->next;
+    }
+  }
+
+  if (count >= 3) {
+    lwsl_warn("IP %s is blocked due to %d failed attempts in the last 5 minutes\n", ip, count);
+    return true;
+  }
+
+  return false;
+}
+
 static struct server *server_new(int argc, char **argv, int start) {
   struct server *ts;
   size_t cmd_len = 0;
@@ -165,6 +210,7 @@ static struct server *server_new(int argc, char **argv, int start) {
   ts = xmalloc(sizeof(struct server));
 
   memset(ts, 0, sizeof(struct server));
+  ts->rate_limit = true;
   ts->client_count = 0;
   ts->sig_code = SIGHUP;
   sprintf(ts->terminal_type, "%s", "xterm-256color");
@@ -203,6 +249,12 @@ static struct server *server_new(int argc, char **argv, int start) {
 
 static void server_free(struct server *ts) {
   if (ts == NULL) return;
+  failed_attempt_t *curr = ts->failed_attempts;
+  while (curr != NULL) {
+    failed_attempt_t *next = curr->next;
+    free(curr);
+    curr = next;
+  }
   if (ts->credential != NULL) free(ts->credential);
   if (ts->auth_header != NULL) free(ts->auth_header);
   if (ts->index != NULL) free(ts->index);
@@ -486,6 +538,13 @@ int main(int argc, char **argv) {
       case 'T':
         strncpy(server->terminal_type, optarg, sizeof(server->terminal_type) - 1);
         server->terminal_type[sizeof(server->terminal_type) - 1] = '\0';
+        break;
+      case 'r':
+        if (strcmp(optarg, "false") == 0 || strcmp(optarg, "0") == 0 || strcmp(optarg, "off") == 0) {
+          server->rate_limit = false;
+        } else {
+          server->rate_limit = true;
+        }
         break;
       case '?':
         break;

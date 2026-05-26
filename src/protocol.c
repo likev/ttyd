@@ -181,14 +181,32 @@ static void wsi_output(struct lws *wsi, pty_buf_t *buf) {
 }
 
 static bool check_auth(struct lws *wsi, struct pss_tty *pss) {
+  char rip[50] = "";
+  if (server->rate_limit && (server->credential != NULL || server->auth_header != NULL)) {
+    lws_get_peer_simple(lws_get_network_wsi(wsi), rip, sizeof(rip));
+    if (is_ip_blocked(rip)) {
+      return false;
+    }
+  }
+
   if (server->auth_header != NULL) {
-    return lws_hdr_custom_copy(wsi, pss->user, sizeof(pss->user), server->auth_header, strlen(server->auth_header)) > 0;
+    bool ok = lws_hdr_custom_copy(wsi, pss->user, sizeof(pss->user), server->auth_header, strlen(server->auth_header)) > 0;
+    if (!ok && server->rate_limit) {
+      if (rip[0] == '\0') lws_get_peer_simple(lws_get_network_wsi(wsi), rip, sizeof(rip));
+      add_failed_attempt(rip);
+    }
+    return ok;
   }
 
   if (server->credential != NULL) {
     char buf[256];
     size_t n = lws_hdr_copy(wsi, buf, sizeof(buf), WSI_TOKEN_HTTP_AUTHORIZATION);
-    return n >= 7 && strstr(buf, "Basic ") && !strcmp(buf + 6, server->credential);
+    bool ok = n >= 7 && strstr(buf, "Basic ") && !strcmp(buf + 6, server->credential);
+    if (!ok && server->rate_limit) {
+      if (rip[0] == '\0') lws_get_peer_simple(lws_get_network_wsi(wsi), rip, sizeof(rip));
+      add_failed_attempt(rip);
+    }
+    return ok;
   }
 
   return true;
@@ -340,6 +358,11 @@ int callback_tty(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
                 lwsl_warn("WS authentication failed with token: %s\n", token);
             }
             if (!pss->authenticated) {
+              if (server->rate_limit) {
+                char rip[50];
+                lws_get_peer_simple(lws_get_network_wsi(wsi), rip, sizeof(rip));
+                add_failed_attempt(rip);
+              }
               json_object_put(obj);
               lws_close_reason(wsi, LWS_CLOSE_STATUS_POLICY_VIOLATION, NULL, 0);
               return -1;

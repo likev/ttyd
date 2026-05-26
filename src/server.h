@@ -1,5 +1,6 @@
 #include <libwebsockets.h>
 #include <stdbool.h>
+#include <time.h>
 #include <uv.h>
 
 #include "pty.h"
@@ -61,6 +62,12 @@ typedef struct {
   bool ws_closed;
 } pty_ctx_t;
 
+typedef struct failed_attempt {
+  char ip[50];
+  time_t timestamp;
+  struct failed_attempt *next;
+} failed_attempt_t;
+
 struct server {
   int client_count;        // client count
   char *prefs_json;        // client preferences
@@ -81,6 +88,11 @@ struct server {
   bool exit_no_conn;       // whether exit on all clients disconnection
   char socket_path[255];   // UNIX domain socket path
   char terminal_type[30];  // terminal type to report
+  bool rate_limit;         // whether to enable IP rate-limiting
+  failed_attempt_t *failed_attempts; // list of failed attempts
 
   uv_loop_t *loop;         // the libuv event loop
 };
+
+void add_failed_attempt(const char *ip);
+bool is_ip_blocked(const char *ip);
