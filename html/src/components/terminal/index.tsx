@@ -80,7 +80,12 @@ export class Terminal extends Component<Props, State> {
                 {showKeyboard && (
                     <Keyboard
                         onKeyPress={data => this.xterm.sendData(data)}
+                        onToggleNativeKeyboard={this.toggleNativeKeyboard}
                         onClose={() => {
+                            const textarea = this.container.querySelector('.xterm-helper-textarea');
+                            if (textarea) {
+                                textarea.setAttribute('inputmode', 'none');
+                            }
                             this.setState({ showKeyboard: false }, () => {
                                 this.xterm.fit();
                             });
@@ -101,5 +106,21 @@ export class Terminal extends Component<Props, State> {
         this.setState({ modal: false });
         const files = (event.target as HTMLInputElement).files;
         if (files) this.xterm.sendFile(files);
+    }
+
+    @bind
+    toggleNativeKeyboard() {
+        const textarea = this.container.querySelector('.xterm-helper-textarea') as HTMLTextAreaElement;
+        if (textarea) {
+            const currentMode = textarea.getAttribute('inputmode');
+            if (currentMode === 'none') {
+                textarea.setAttribute('inputmode', 'text');
+                textarea.focus();
+            } else {
+                textarea.setAttribute('inputmode', 'none');
+                textarea.blur();
+                textarea.focus();
+            }
+        }
     }
 }

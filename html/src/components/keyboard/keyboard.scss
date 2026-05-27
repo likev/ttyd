@@ -52,6 +52,12 @@
       background: rgba(235, 87, 87, 0.3);
     }
   }
+
+  &.active {
+    background: rgba(72, 187, 120, 0.3) !important;
+    border-color: rgba(72, 187, 120, 0.4);
+    color: #9ae6b4;
+  }
 }
 
 .keyboard-body {

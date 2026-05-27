@@ -5,6 +5,7 @@ import './keyboard.scss';
 interface Props {
     onKeyPress: (data: string) => void;
     onClose: () => void;
+    onToggleNativeKeyboard: () => void;
 }
 
 interface State {
@@ -12,6 +13,7 @@ interface State {
     ctrlActive: boolean;
     altActive: boolean;
     shiftActive: boolean;
+    nativeKeyboardActive: boolean;
 }
 
 export class Keyboard extends Component<Props, State> {
@@ -22,6 +24,7 @@ export class Keyboard extends Component<Props, State> {
             ctrlActive: false,
             altActive: false,
             shiftActive: false,
+            nativeKeyboardActive: false,
         };
     }
 
@@ -137,8 +140,15 @@ export class Keyboard extends Component<Props, State> {
         this.setState({ mode: this.state.mode === 'terminal' ? 'qwerty' : 'terminal' });
     }
 
+    @bind
+    private handleNativeKeyboardToggle(e: PointerEvent) {
+        e.preventDefault();
+        this.setState({ nativeKeyboardActive: !this.state.nativeKeyboardActive });
+        this.props.onToggleNativeKeyboard();
+    }
+
     render() {
-        const { mode, ctrlActive, altActive, shiftActive } = this.state;
+        const { mode, ctrlActive, altActive, shiftActive, nativeKeyboardActive } = this.state;
 
         const renderKey = (label: string, type: 'char' | 'special', value: string, extraClass = '') => {
             let activeClass = '';
@@ -167,6 +177,12 @@ export class Keyboard extends Component<Props, State> {
                 <div className="keyboard-header">
                     <button className="header-btn" onPointerDown={this.toggleMode}>
                         {mode === 'terminal' ? '⌨️ Text Input' : '⚙️ Terminal Keys'}
+                    </button>
+                    <button
+                        className={`header-btn ${nativeKeyboardActive ? 'active' : ''}`}
+                        onPointerDown={this.handleNativeKeyboardToggle}
+                    >
+                        {nativeKeyboardActive ? '📱 Block Mobile KB' : '🌐 Show Mobile KB (IME)'}
                     </button>
                     <button
                         className="header-btn close"
