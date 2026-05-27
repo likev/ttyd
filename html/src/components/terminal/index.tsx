@@ -13,6 +13,7 @@ interface Props extends XtermOptions {
 interface State {
     modal: boolean;
     showKeyboard: boolean;
+    nativeKeyboardActive: boolean;
 }
 
 export class Terminal extends Component<Props, State> {
@@ -25,6 +26,7 @@ export class Terminal extends Component<Props, State> {
         this.state = {
             modal: false,
             showKeyboard: false,
+            nativeKeyboardActive: false,
         };
     }
 
@@ -50,7 +52,7 @@ export class Terminal extends Component<Props, State> {
                 textarea.addEventListener('blur', () => {
                     setTimeout(() => {
                         if (document.activeElement !== textarea) {
-                            this.setState({ showKeyboard: false }, () => {
+                            this.setState({ showKeyboard: false, nativeKeyboardActive: false }, () => {
                                 this.xterm.fit();
                             });
                         }
@@ -64,12 +66,14 @@ export class Terminal extends Component<Props, State> {
         this.xterm.dispose();
     }
 
-    render({ id }: Props, { modal, showKeyboard }: State) {
+    render({ id }: Props, { modal, showKeyboard, nativeKeyboardActive }: State) {
         return (
             <div
                 id={id}
                 ref={c => (this.container = c as HTMLElement)}
-                style={showKeyboard ? { height: 'calc(100% - 270px)' } : {}}
+                style={
+                    showKeyboard ? { height: nativeKeyboardActive ? 'calc(100% - 54px)' : 'calc(100% - 270px)' } : {}
+                }
             >
                 <Modal show={modal}>
                     <label class="file-label">
@@ -86,7 +90,7 @@ export class Terminal extends Component<Props, State> {
                             if (textarea) {
                                 textarea.setAttribute('inputmode', 'none');
                             }
-                            this.setState({ showKeyboard: false }, () => {
+                            this.setState({ showKeyboard: false, nativeKeyboardActive: false }, () => {
                                 this.xterm.fit();
                             });
                         }}
@@ -116,10 +120,16 @@ export class Terminal extends Component<Props, State> {
             if (currentMode === 'none') {
                 textarea.setAttribute('inputmode', 'text');
                 textarea.focus();
+                this.setState({ nativeKeyboardActive: true }, () => {
+                    this.xterm.fit();
+                });
             } else {
                 textarea.setAttribute('inputmode', 'none');
                 textarea.blur();
                 textarea.focus();
+                this.setState({ nativeKeyboardActive: false }, () => {
+                    this.xterm.fit();
+                });
             }
         }
     }

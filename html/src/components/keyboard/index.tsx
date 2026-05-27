@@ -173,11 +173,13 @@ export class Keyboard extends Component<Props, State> {
         ];
 
         return (
-            <div className="virtual-keyboard-container">
+            <div className={`virtual-keyboard-container ${nativeKeyboardActive ? 'collapsed' : ''}`}>
                 <div className="keyboard-header">
-                    <button className="header-btn" onPointerDown={this.toggleMode}>
-                        {mode === 'terminal' ? '⌨️ Text Input' : '⚙️ Terminal Keys'}
-                    </button>
+                    {!nativeKeyboardActive && (
+                        <button className="header-btn" onPointerDown={this.toggleMode}>
+                            {mode === 'terminal' ? '⌨️ Text Input' : '⚙️ Terminal Keys'}
+                        </button>
+                    )}
                     <button
                         className={`header-btn ${nativeKeyboardActive ? 'active' : ''}`}
                         onPointerDown={this.handleNativeKeyboardToggle}
@@ -195,81 +197,83 @@ export class Keyboard extends Component<Props, State> {
                     </button>
                 </div>
 
-                <div className="keyboard-body">
-                    {mode === 'terminal' ? (
-                        <div className="layout-terminal">
-                            {/* Row 1: Modifier and Core Actions */}
-                            <div className="kbd-row">
-                                {renderKey('ESC', 'special', 'ESC', 'key-fn')}
-                                {renderKey('TAB', 'special', 'TAB', 'key-fn')}
-                                {renderKey('CTRL', 'special', 'CTRL', 'key-modifier')}
-                                {renderKey('ALT', 'special', 'ALT', 'key-modifier')}
-                                {renderKey('INS', 'special', 'INS', 'key-fn')}
-                                {renderKey('DEL', 'special', 'DEL', 'key-fn')}
-                            </div>
-                            {/* Row 2: Function Keys F1-F6 */}
-                            <div className="kbd-row">
-                                {renderKey('F1', 'special', 'F1', 'key-fn')}
-                                {renderKey('F2', 'special', 'F2', 'key-fn')}
-                                {renderKey('F3', 'special', 'F3', 'key-fn')}
-                                {renderKey('F4', 'special', 'F4', 'key-fn')}
-                                {renderKey('F5', 'special', 'F5', 'key-fn')}
-                                {renderKey('F6', 'special', 'F6', 'key-fn')}
-                            </div>
-                            {/* Row 3: Function Keys F7-F12 */}
-                            <div className="kbd-row">
-                                {renderKey('F7', 'special', 'F7', 'key-fn')}
-                                {renderKey('F8', 'special', 'F8', 'key-fn')}
-                                {renderKey('F9', 'special', 'F9', 'key-fn')}
-                                {renderKey('F10', 'special', 'F10', 'key-fn')}
-                                {renderKey('F11', 'special', 'F11', 'key-fn')}
-                                {renderKey('F12', 'special', 'F12', 'key-fn')}
-                            </div>
-                            {/* Row 4: Navigation / Edit Actions */}
-                            <div className="kbd-row">
-                                {renderKey('HOME', 'special', 'HOME', 'key-fn')}
-                                {renderKey('END', 'special', 'END', 'key-fn')}
-                                {renderKey('PGUP', 'special', 'PGUP', 'key-fn')}
-                                {renderKey('PGDN', 'special', 'PGDN', 'key-fn')}
-                                {renderKey('BKSP', 'special', 'BACKSPACE', 'key-fn wide')}
-                            </div>
-                            {/* Row 5: Arrows and Space / Enter */}
-                            <div className="kbd-row">
-                                {renderKey('◀', 'special', 'LEFT', 'key-arrow')}
-                                {renderKey('▲', 'special', 'UP', 'key-arrow')}
-                                {renderKey('▼', 'special', 'DOWN', 'key-arrow')}
-                                {renderKey('▶', 'special', 'RIGHT', 'key-arrow')}
-                                {renderKey('SPACE', 'special', 'SPACE', 'key-space')}
-                                {renderKey('ENTER', 'special', 'ENTER', 'key-enter')}
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="layout-qwerty">
-                            {qwertyRows.map((row, idx) => (
-                                <div className="kbd-row" key={idx}>
-                                    {row.map(key => {
-                                        if (key === 'SHIFT') {
-                                            return renderKey('⇧', 'special', 'SHIFT', 'key-modifier wide');
-                                        }
-                                        if (key === 'BACKSPACE') {
-                                            return renderKey('⌫', 'special', 'BACKSPACE', 'key-fn wide');
-                                        }
-                                        return renderKey(shiftActive ? key : key.toLowerCase(), 'char', key);
-                                    })}
+                {!nativeKeyboardActive && (
+                    <div className="keyboard-body">
+                        {mode === 'terminal' ? (
+                            <div className="layout-terminal">
+                                {/* Row 1: Modifier and Core Actions */}
+                                <div className="kbd-row">
+                                    {renderKey('ESC', 'special', 'ESC', 'key-fn')}
+                                    {renderKey('TAB', 'special', 'TAB', 'key-fn')}
+                                    {renderKey('CTRL', 'special', 'CTRL', 'key-modifier')}
+                                    {renderKey('ALT', 'special', 'ALT', 'key-modifier')}
+                                    {renderKey('INS', 'special', 'INS', 'key-fn')}
+                                    {renderKey('DEL', 'special', 'DEL', 'key-fn')}
                                 </div>
-                            ))}
-                            {/* QWERTY Row 4: Modifiers, Space, Enter */}
-                            <div className="kbd-row">
-                                {renderKey('CTRL', 'special', 'CTRL', 'key-modifier')}
-                                {renderKey('ALT', 'special', 'ALT', 'key-modifier')}
-                                {renderKey('SPACE', 'special', 'SPACE', 'key-space')}
-                                {renderKey('/', 'char', '/')}
-                                {renderKey('-', 'char', '-')}
-                                {renderKey('ENTER', 'special', 'ENTER', 'key-enter wide')}
+                                {/* Row 2: Function Keys F1-F6 */}
+                                <div className="kbd-row">
+                                    {renderKey('F1', 'special', 'F1', 'key-fn')}
+                                    {renderKey('F2', 'special', 'F2', 'key-fn')}
+                                    {renderKey('F3', 'special', 'F3', 'key-fn')}
+                                    {renderKey('F4', 'special', 'F4', 'key-fn')}
+                                    {renderKey('F5', 'special', 'F5', 'key-fn')}
+                                    {renderKey('F6', 'special', 'F6', 'key-fn')}
+                                </div>
+                                {/* Row 3: Function Keys F7-F12 */}
+                                <div className="kbd-row">
+                                    {renderKey('F7', 'special', 'F7', 'key-fn')}
+                                    {renderKey('F8', 'special', 'F8', 'key-fn')}
+                                    {renderKey('F9', 'special', 'F9', 'key-fn')}
+                                    {renderKey('F10', 'special', 'F10', 'key-fn')}
+                                    {renderKey('F11', 'special', 'F11', 'key-fn')}
+                                    {renderKey('F12', 'special', 'F12', 'key-fn')}
+                                </div>
+                                {/* Row 4: Navigation / Edit Actions */}
+                                <div className="kbd-row">
+                                    {renderKey('HOME', 'special', 'HOME', 'key-fn')}
+                                    {renderKey('END', 'special', 'END', 'key-fn')}
+                                    {renderKey('PGUP', 'special', 'PGUP', 'key-fn')}
+                                    {renderKey('PGDN', 'special', 'PGDN', 'key-fn')}
+                                    {renderKey('BKSP', 'special', 'BACKSPACE', 'key-fn wide')}
+                                </div>
+                                {/* Row 5: Arrows and Space / Enter */}
+                                <div className="kbd-row">
+                                    {renderKey('◀', 'special', 'LEFT', 'key-arrow')}
+                                    {renderKey('▲', 'special', 'UP', 'key-arrow')}
+                                    {renderKey('▼', 'special', 'DOWN', 'key-arrow')}
+                                    {renderKey('▶', 'special', 'RIGHT', 'key-arrow')}
+                                    {renderKey('SPACE', 'special', 'SPACE', 'key-space')}
+                                    {renderKey('ENTER', 'special', 'ENTER', 'key-enter')}
+                                </div>
                             </div>
-                        </div>
-                    )}
-                </div>
+                        ) : (
+                            <div className="layout-qwerty">
+                                {qwertyRows.map((row, idx) => (
+                                    <div className="kbd-row" key={idx}>
+                                        {row.map(key => {
+                                            if (key === 'SHIFT') {
+                                                return renderKey('⇧', 'special', 'SHIFT', 'key-modifier wide');
+                                            }
+                                            if (key === 'BACKSPACE') {
+                                                return renderKey('⌫', 'special', 'BACKSPACE', 'key-fn wide');
+                                            }
+                                            return renderKey(shiftActive ? key : key.toLowerCase(), 'char', key);
+                                        })}
+                                    </div>
+                                ))}
+                                {/* QWERTY Row 4: Modifiers, Space, Enter */}
+                                <div className="kbd-row">
+                                    {renderKey('CTRL', 'special', 'CTRL', 'key-modifier')}
+                                    {renderKey('ALT', 'special', 'ALT', 'key-modifier')}
+                                    {renderKey('SPACE', 'special', 'SPACE', 'key-space')}
+                                    {renderKey('/', 'char', '/')}
+                                    {renderKey('-', 'char', '-')}
+                                    {renderKey('ENTER', 'special', 'ENTER', 'key-enter wide')}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         );
     }
