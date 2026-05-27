@@ -81,7 +81,7 @@ export class Xterm {
     private written = 0;
     private pending = 0;
 
-    private terminal: Terminal;
+    public terminal: Terminal;
     private fitAddon = new FitAddon();
     private overlayAddon = new OverlayAddon();
     private webglAddon?: WebglAddon;
@@ -161,6 +161,11 @@ export class Xterm {
 
         terminal.open(parent);
         fitAddon.fit();
+    }
+
+    @bind
+    public fit() {
+        this.fitAddon.fit();
     }
 
     @bind
