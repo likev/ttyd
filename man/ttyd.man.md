@@ -133,11 +133,12 @@ ttyd has a mechanism to pass server side command-line arguments to the browser p
 
 ## Mobile usage
 
-ttyd includes built-in touch and virtual keyboard optimizations for mobile devices:
-- Includes terminal-specific keys (Ctrl, Alt, Esc, arrows, function keys, Ctrl+C/D shortcuts)
-- Pinch-to-zoom is disabled (`user-scalable=no`) and safe-area insets (notch/dynamic island) are respected
-- Tap anywhere on the terminal to focus and open the virtual keyboard
-- Long press on the terminal to paste clipboard text
+ttyd includes dedicated touch and virtual keyboard optimizations for mobile devices:
+- 3 virtual keyboard layouts (`⚙️ Terminal Keys`, `🔤 Text (ABC)`, `1️⃣ Numbers & Symbols`)
+- 5-level pinch font zoom (`80%`, `90%`, `100%`, `110%`, `120%`) with font size toasts
+- Explicit keyboard control via floating `⌨️` open button and `❌ Hide` button
+- Page zoom is disabled (`user-scalable=no`) and notch/dynamic island safe-area insets are respected
+- Tap terminal to focus, long press to paste clipboard text
 - Tap "Show Mobile KB (IME)" on the virtual keyboard toolbar to activate native IME keyboard for CJK input
 
 ## Advanced usage

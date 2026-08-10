@@ -101,12 +101,16 @@ Read the example usage on the [wiki](https://github.com/tsl0922/ttyd/wiki/Exampl
 
 ## Mobile Support
 
-ttyd is optimized for mobile touch devices (iOS, Android, iPadOS):
-- Built-in virtual keyboard with terminal control keys (Ctrl, Alt, Esc, arrows, function keys, Ctrl+C/Ctrl+D)
-- Automatic viewport scaling (`width=device-width`) and pinch-zoom prevention
-- Dynamic safe-area inset adjustment for notch / dynamic island displays
-- Touch interactions: tap terminal to focus, long press to paste clipboard text
-- Native keyboard toggle for IME input (CJK typing)
+ttyd includes dedicated touch and virtual keyboard optimizations for mobile devices (iOS, Android, iPadOS):
+- **3 Virtual Keyboard Modes:**
+  - `⚙️ Terminal Keys`: Control keys (`Ctrl`, `Alt`, `Esc`, `Tab`, `Ins`, `Del`, `Home`, `End`, `PgUp`, `PgDn`, `F1-F12`, `^C`/`^D` shortcuts, Arrow keys)
+  - `🔤 Text (ABC)`: Full QWERTY text layout
+  - `1️⃣ Numbers & Symbols`: Numbers `0-9` and special characters (`~ ! @ # $ % ^ & * ( ) _ + - = { } [ ] \ | : ; " ' < > , . ? /`)
+- **5-Level Pinch Font Zoom:** Two-finger pinch in/out scales terminal font size across 5 levels (`80%`, `90%`, `100%`, `110%`, `120%`) with visual overlay toasts without distorting page zoom
+- **Explicit Keyboard Control:** Toggle virtual keyboard with a floating `⌨️` button or `❌ Hide` button; no unwanted auto-hiding during input
+- **Touch Gestures:** Tap terminal to focus, long-press to paste clipboard text
+- **Native Keyboard Support:** Dedicated button (`Show Mobile KB`) to switch to native OS keyboard for CJK IME input
+- **Display Adaptations:** Automatic viewport scaling (`width=device-width, user-scalable=no, viewport-fit=cover`) and notch / dynamic island safe-area inset compliance
 
 ## Alternatives
 
