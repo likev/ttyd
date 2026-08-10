@@ -78,8 +78,10 @@ export class Terminal extends Component<Props, State> {
                     touchStartX = e.touches[0].clientX;
                     touchStartY = e.touches[0].clientY;
 
-                    // Tap to focus
-                    if (textarea && document.activeElement !== textarea) {
+                    // Tap to focus / reopen virtual keyboard if hidden
+                    if (!this.state.showKeyboard) {
+                        this.openKeyboard();
+                    } else if (textarea && document.activeElement !== textarea) {
                         textarea.focus();
                     }
 
@@ -162,7 +164,21 @@ export class Terminal extends Component<Props, State> {
         this.xterm.dispose();
     }
 
+    @bind
+    openKeyboard() {
+        const textarea = this.container?.querySelector('.xterm-helper-textarea') as HTMLTextAreaElement;
+        if (textarea) {
+            textarea.setAttribute('inputmode', 'none');
+            textarea.blur();
+            textarea.focus();
+        }
+        this.setState({ showKeyboard: true }, () => {
+            this.xterm.fit();
+        });
+    }
+
     render({ id }: Props, { modal, showKeyboard, nativeKeyboardActive }: State) {
+        const isMobile = isMobileDevice();
         return (
             <div
                 id={id}
@@ -189,15 +205,31 @@ export class Terminal extends Component<Props, State> {
                         onKeyPress={data => this.xterm.sendData(data)}
                         onToggleNativeKeyboard={this.toggleNativeKeyboard}
                         onClose={() => {
-                            const textarea = this.container.querySelector('.xterm-helper-textarea');
+                            const textarea = this.container.querySelector(
+                                '.xterm-helper-textarea'
+                            ) as HTMLTextAreaElement;
                             if (textarea) {
                                 textarea.setAttribute('inputmode', 'none');
+                                textarea.blur();
                             }
                             this.setState({ showKeyboard: false, nativeKeyboardActive: false }, () => {
                                 this.xterm.fit();
                             });
                         }}
                     />
+                )}
+                {isMobile && !showKeyboard && (
+                    <button
+                        aria-label="Show virtual keyboard"
+                        class="floating-keyboard-btn"
+                        onClick={this.openKeyboard}
+                        onTouchEnd={e => {
+                            e.preventDefault();
+                            this.openKeyboard();
+                        }}
+                    >
+                        ⌨️
+                    </button>
                 )}
             </div>
         );
