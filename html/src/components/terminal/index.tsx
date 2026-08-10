@@ -31,6 +31,15 @@ export class Terminal extends Component<Props, State> {
         };
     }
 
+    private static readonly ZOOM_LEVELS = [
+        { ratio: 0.8, label: '80%' },
+        { ratio: 0.9, label: '90%' },
+        { ratio: 1.0, label: '100%' },
+        { ratio: 1.1, label: '110%' },
+        { ratio: 1.2, label: '120%' },
+    ];
+    private zoomIndex = 2; // 100% default
+
     async componentDidMount() {
         await this.xterm.refreshToken();
         this.xterm.open(this.container);
@@ -38,18 +47,42 @@ export class Terminal extends Component<Props, State> {
 
         const isMobile = isMobileDevice();
         if (isMobile) {
+            // Block default WebKit page gesture zoom on iOS
+            const preventGesture = (e: Event) => e.preventDefault();
+            document.addEventListener('gesturestart', preventGesture, { passive: false });
+            document.addEventListener('gesturechange', preventGesture, { passive: false });
+            document.addEventListener('gestureend', preventGesture, { passive: false });
+            this.unmountCleanups.push(() => {
+                document.removeEventListener('gesturestart', preventGesture);
+                document.removeEventListener('gesturechange', preventGesture);
+                document.removeEventListener('gestureend', preventGesture);
+            });
+
             // Apply inputmode="none" to the helper textarea to block native keyboard
             const textarea = this.container.querySelector('.xterm-helper-textarea') as HTMLTextAreaElement;
             if (textarea) {
                 textarea.setAttribute('inputmode', 'none');
             }
 
-            // Tap-to-focus and Long-press paste touch handlers
+            // Tap-to-focus, Long-press paste, and 2-finger pinch font zoom touch handlers
             let longPressTimer: number | null = null;
             let touchStartX = 0;
             let touchStartY = 0;
+            let initialPinchDist = 0;
 
             const onTouchStart = (e: TouchEvent) => {
+                if (e.touches.length === 2) {
+                    if (longPressTimer !== null) {
+                        clearTimeout(longPressTimer);
+                        longPressTimer = null;
+                    }
+                    initialPinchDist = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    return;
+                }
+
                 if (e.touches.length === 1) {
                     touchStartX = e.touches[0].clientX;
                     touchStartY = e.touches[0].clientY;
@@ -77,6 +110,24 @@ export class Terminal extends Component<Props, State> {
             };
 
             const onTouchMove = (e: TouchEvent) => {
+                if (e.touches.length === 2 && initialPinchDist > 0) {
+                    const currentDist = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    const ratio = currentDist / initialPinchDist;
+                    if (ratio > 1.25 && this.zoomIndex < Terminal.ZOOM_LEVELS.length - 1) {
+                        this.zoomIndex++;
+                        this.applyZoom();
+                        initialPinchDist = currentDist;
+                    } else if (ratio < 0.75 && this.zoomIndex > 0) {
+                        this.zoomIndex--;
+                        this.applyZoom();
+                        initialPinchDist = currentDist;
+                    }
+                    return;
+                }
+
                 if (longPressTimer !== null && e.touches.length === 1) {
                     const diffX = Math.abs(e.touches[0].clientX - touchStartX);
                     const diffY = Math.abs(e.touches[0].clientY - touchStartY);
@@ -92,6 +143,7 @@ export class Terminal extends Component<Props, State> {
                     clearTimeout(longPressTimer);
                     longPressTimer = null;
                 }
+                initialPinchDist = 0;
             };
 
             this.container.addEventListener('touchstart', onTouchStart, { passive: true });
@@ -128,6 +180,12 @@ export class Terminal extends Component<Props, State> {
                 });
             }
         }
+    }
+
+    @bind
+    private applyZoom() {
+        const level = Terminal.ZOOM_LEVELS[this.zoomIndex];
+        this.xterm.setFontScale(level.ratio, level.label);
     }
 
     componentWillUnmount() {

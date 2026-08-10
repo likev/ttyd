@@ -188,6 +188,17 @@ export class Xterm {
     }
 
     @bind
+    public setFontScale(scaleRatio: number, percentLabel: string) {
+        const baseSize = this.options.clientOptions.mobileFontSize || 16;
+        const newSize = Math.max(10, Math.round(baseSize * scaleRatio));
+        if (this.terminal) {
+            this.terminal.options.fontSize = newSize;
+            this.fitAddon.fit();
+            this.overlayAddon.showOverlay(`Font: ${percentLabel} (${newSize}px)`, 600);
+        }
+    }
+
+    @bind
     private initListeners() {
         const { terminal, fitAddon, overlayAddon, register, sendData } = this;
         register(
