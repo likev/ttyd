@@ -10,7 +10,7 @@ interface Props {
 }
 
 interface State {
-    mode: 'terminal' | 'qwerty';
+    mode: 'terminal' | 'qwerty' | 'symbols';
     ctrlActive: boolean;
     altActive: boolean;
     shiftActive: boolean;
@@ -32,7 +32,7 @@ export class Keyboard extends Component<Props, State> {
         // Prevent losing focus from the terminal textarea
         e.preventDefault();
 
-        const { ctrlActive, altActive, shiftActive } = this.state;
+        const { ctrlActive, altActive, shiftActive, mode } = this.state;
         let data = value;
 
         if (type === 'char') {
@@ -43,11 +43,11 @@ export class Keyboard extends Component<Props, State> {
                     data = String.fromCharCode(charCode - 96);
                 }
             } else if (altActive) {
-                data = '\x1b' + (shiftActive ? value.toUpperCase() : value.toLowerCase());
+                data = '\x1b' + (shiftActive ? value.toUpperCase() : value);
             } else if (shiftActive) {
                 data = value.toUpperCase();
             } else {
-                data = value.toLowerCase();
+                data = mode === 'qwerty' ? (shiftActive ? value.toUpperCase() : value.toLowerCase()) : value;
             }
             this.setState({ ctrlActive: false, altActive: false, shiftActive: false });
             this.props.onKeyPress(data);
@@ -137,7 +137,12 @@ export class Keyboard extends Component<Props, State> {
     @bind
     private toggleMode(e: PointerEvent) {
         e.preventDefault();
-        this.setState({ mode: this.state.mode === 'terminal' ? 'qwerty' : 'terminal' });
+        const nextMode: Record<State['mode'], State['mode']> = {
+            terminal: 'qwerty',
+            qwerty: 'symbols',
+            symbols: 'terminal',
+        };
+        this.setState({ mode: nextMode[this.state.mode] });
     }
 
     @bind
@@ -184,7 +189,9 @@ export class Keyboard extends Component<Props, State> {
                 <div className="keyboard-header">
                     {!nativeKeyboardActive && (
                         <button className="header-btn" aria-label="Toggle input mode" onPointerDown={this.toggleMode}>
-                            {mode === 'terminal' ? '⌨️ Text Input' : '⚙️ Terminal Keys'}
+                            {mode === 'terminal' && '⚙️ Terminal Keys'}
+                            {mode === 'qwerty' && '🔤 Text (ABC)'}
+                            {mode === 'symbols' && '1️⃣ Numbers & Symbols'}
                         </button>
                     )}
                     <button
@@ -208,7 +215,7 @@ export class Keyboard extends Component<Props, State> {
 
                 {!nativeKeyboardActive && (
                     <div className="keyboard-body">
-                        {mode === 'terminal' ? (
+                        {mode === 'terminal' && (
                             <div className="layout-terminal">
                                 {/* Row 1: Modifier, Quick Shortcuts, and Core Actions */}
                                 <div className="kbd-row">
@@ -257,7 +264,8 @@ export class Keyboard extends Component<Props, State> {
                                     {renderKey('ENTER', 'special', 'ENTER', 'key-enter', 'Enter')}
                                 </div>
                             </div>
-                        ) : (
+                        )}
+                        {mode === 'qwerty' && (
                             <div className="layout-qwerty">
                                 {qwertyRows.map((row, idx) => (
                                     <div className="kbd-row" key={idx}>
@@ -291,6 +299,39 @@ export class Keyboard extends Component<Props, State> {
                                     {renderKey('SPACE', 'special', 'SPACE', 'key-space', 'Space')}
                                     {renderKey('/', 'char', '/', '', 'Slash')}
                                     {renderKey('-', 'char', '-', '', 'Dash')}
+                                    {renderKey('ENTER', 'special', 'ENTER', 'key-enter wide', 'Enter')}
+                                </div>
+                            </div>
+                        )}
+                        {mode === 'symbols' && (
+                            <div className="layout-symbols">
+                                <div className="kbd-row">
+                                    {['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'].map(num =>
+                                        renderKey(num, 'char', num, 'key-fn', `Number ${num}`)
+                                    )}
+                                </div>
+                                <div className="kbd-row">
+                                    {['!', '@', '#', '$', '%', '^', '&', '*', '(', ')'].map(sym =>
+                                        renderKey(sym, 'char', sym, '', `Symbol ${sym}`)
+                                    )}
+                                </div>
+                                <div className="kbd-row">
+                                    {['~', '`', '-', '_', '=', '+', '[', ']', '{', '}'].map(sym =>
+                                        renderKey(sym, 'char', sym, '', `Symbol ${sym}`)
+                                    )}
+                                </div>
+                                <div className="kbd-row">
+                                    {['\\', '|', ';', ':', "'", '"', ',', '.', '<', '>'].map(sym =>
+                                        renderKey(sym, 'char', sym, '', `Symbol ${sym}`)
+                                    )}
+                                </div>
+                                <div className="kbd-row">
+                                    {renderKey('CTRL', 'special', 'CTRL', 'key-modifier', 'Control')}
+                                    {renderKey('ALT', 'special', 'ALT', 'key-modifier', 'Alt')}
+                                    {renderKey('/', 'char', '/', '', 'Slash')}
+                                    {renderKey('?', 'char', '?', '', 'Question Mark')}
+                                    {renderKey('SPACE', 'special', 'SPACE', 'key-space', 'Space')}
+                                    {renderKey('BKSP', 'special', 'BACKSPACE', 'key-fn wide', 'Backspace')}
                                     {renderKey('ENTER', 'special', 'ENTER', 'key-enter wide', 'Enter')}
                                 </div>
                             </div>
