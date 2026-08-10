@@ -42,24 +42,7 @@ export class Terminal extends Component<Props, State> {
             const textarea = this.container.querySelector('.xterm-helper-textarea') as HTMLTextAreaElement;
             if (textarea) {
                 textarea.setAttribute('inputmode', 'none');
-
-                // Ensure keyboard opens on focus
-                const onFocus = () => {
-                    if (!this.state.showKeyboard) {
-                        this.setState({ showKeyboard: true }, () => {
-                            this.xterm.fit();
-                        });
-                    }
-                };
-
-                textarea.addEventListener('focus', onFocus);
-                this.unmountCleanups.push(() => {
-                    textarea.removeEventListener('focus', onFocus);
-                });
             }
-
-            // Automatically open virtual keyboard on mobile startup
-            this.openKeyboard();
 
             // Tap-to-focus and Long-press paste touch handlers
             let longPressTimer: number | null = null;
@@ -71,10 +54,8 @@ export class Terminal extends Component<Props, State> {
                     touchStartX = e.touches[0].clientX;
                     touchStartY = e.touches[0].clientY;
 
-                    // Tap to focus / reopen virtual keyboard if hidden
-                    if (!this.state.showKeyboard) {
-                        this.openKeyboard();
-                    } else if (textarea && document.activeElement !== textarea) {
+                    // Tap to focus helper textarea without auto-showing virtual keyboard
+                    if (textarea && document.activeElement !== textarea) {
                         textarea.focus();
                     }
 
