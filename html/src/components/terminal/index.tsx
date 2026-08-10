@@ -43,30 +43,23 @@ export class Terminal extends Component<Props, State> {
             if (textarea) {
                 textarea.setAttribute('inputmode', 'none');
 
-                // Listen to focus/blur to toggle virtual keyboard visibility
+                // Ensure keyboard opens on focus
                 const onFocus = () => {
-                    this.setState({ showKeyboard: true }, () => {
-                        this.xterm.fit();
-                    });
-                };
-
-                const onBlur = () => {
-                    setTimeout(() => {
-                        if (document.activeElement !== textarea) {
-                            this.setState({ showKeyboard: false, nativeKeyboardActive: false }, () => {
-                                this.xterm.fit();
-                            });
-                        }
-                    }, 150);
+                    if (!this.state.showKeyboard) {
+                        this.setState({ showKeyboard: true }, () => {
+                            this.xterm.fit();
+                        });
+                    }
                 };
 
                 textarea.addEventListener('focus', onFocus);
-                textarea.addEventListener('blur', onBlur);
                 this.unmountCleanups.push(() => {
                     textarea.removeEventListener('focus', onFocus);
-                    textarea.removeEventListener('blur', onBlur);
                 });
             }
+
+            // Automatically open virtual keyboard on mobile startup
+            this.openKeyboard();
 
             // Tap-to-focus and Long-press paste touch handlers
             let longPressTimer: number | null = null;
