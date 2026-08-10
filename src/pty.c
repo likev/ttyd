@@ -107,8 +107,8 @@ void process_free(pty_process *process) {
   if (process->pty != NULL) pClosePseudoConsole(process->pty);
   if (process->handle != NULL) CloseHandle(process->handle);
 #else
-  close(process->pty);
-  uv_thread_join(&process->tid);
+  if (process->pty > 0) close(process->pty);
+  if (process->tid) uv_thread_join(&process->tid);
 #endif
   if (process->in != NULL) uv_close((uv_handle_t *) process->in, close_cb);
   if (process->out != NULL) uv_close((uv_handle_t *) process->out, close_cb);
@@ -201,19 +201,25 @@ static WCHAR *to_utf16(char *str) {
 
 // convert argv to cmdline for CreateProcessW
 static WCHAR *join_args(char **argv) {
-  char args[256] = {0};
+  size_t len = 0;
   char **ptr = argv;
   for (; *ptr; ptr++) {
     char *quoted = (char *) quote_arg(*ptr);
-    size_t arg_len = strlen(args) + 1;
-    size_t quoted_len = strlen(quoted);
-    if (arg_len == 1) memset(args, 0, 2);
-    if (arg_len != 1) strcat(args, " ");
-    strncat(args, quoted, quoted_len);
+    len += strlen(quoted) + 1;
     if (quoted != *ptr) free(quoted);
   }
-  if (args[255] != '\0') args[255] = '\0';  // truncate
-  return to_utf16(args);
+  if (len == 0) return NULL;
+  char *args = xmalloc(len + 1);
+  args[0] = '\0';
+  for (ptr = argv; *ptr; ptr++) {
+    char *quoted = (char *) quote_arg(*ptr);
+    if (args[0] != '\0') strcat(args, " ");
+    strcat(args, quoted);
+    if (quoted != *ptr) free(quoted);
+  }
+  WCHAR *res = to_utf16(args);
+  free(args);
+  return res;
 }
 
 static bool conpty_setup(HPCON *hnd, COORD size, STARTUPINFOEXW *si_ex, char **in_name, char **out_name) {

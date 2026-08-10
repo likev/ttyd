@@ -3,6 +3,7 @@ import { bind } from 'decko';
 import './keyboard.scss';
 
 interface Props {
+    nativeKeyboardActive: boolean;
     onKeyPress: (data: string) => void;
     onClose: () => void;
     onToggleNativeKeyboard: () => void;
@@ -13,7 +14,6 @@ interface State {
     ctrlActive: boolean;
     altActive: boolean;
     shiftActive: boolean;
-    nativeKeyboardActive: boolean;
 }
 
 export class Keyboard extends Component<Props, State> {
@@ -24,7 +24,6 @@ export class Keyboard extends Component<Props, State> {
             ctrlActive: false,
             altActive: false,
             shiftActive: false,
-            nativeKeyboardActive: false,
         };
     }
 
@@ -33,7 +32,7 @@ export class Keyboard extends Component<Props, State> {
         // Prevent losing focus from the terminal textarea
         e.preventDefault();
 
-        let { ctrlActive, altActive, shiftActive } = this.state;
+        const { ctrlActive, altActive, shiftActive } = this.state;
         let data = value;
 
         if (type === 'char') {
@@ -43,29 +42,32 @@ export class Keyboard extends Component<Props, State> {
                     // Ctrl+A (1) to Ctrl+Z (26)
                     data = String.fromCharCode(charCode - 96);
                 }
-                ctrlActive = false;
             } else if (altActive) {
                 data = '\x1b' + (shiftActive ? value.toUpperCase() : value.toLowerCase());
-                altActive = false;
             } else if (shiftActive) {
                 data = value.toUpperCase();
-                shiftActive = false;
             } else {
                 data = value.toLowerCase();
             }
-            this.setState({ ctrlActive, altActive, shiftActive });
+            this.setState({ ctrlActive: false, altActive: false, shiftActive: false });
             this.props.onKeyPress(data);
         } else {
             // Special keys
             switch (value) {
                 case 'CTRL':
                     this.setState({ ctrlActive: !ctrlActive });
-                    break;
+                    return;
                 case 'ALT':
                     this.setState({ altActive: !altActive });
-                    break;
+                    return;
                 case 'SHIFT':
                     this.setState({ shiftActive: !shiftActive });
+                    return;
+                case 'CTRL_C':
+                    this.props.onKeyPress('\x03');
+                    break;
+                case 'CTRL_D':
+                    this.props.onKeyPress('\x04');
                     break;
                 case 'ESC':
                     this.props.onKeyPress('\x1b');
@@ -117,20 +119,18 @@ export class Keyboard extends Component<Props, State> {
                         // Function keys F1-F12
                         const num = parseInt(value.substring(1), 10);
                         if (num >= 1 && num <= 4) {
-                            // F1-F4: ESC O P, ESC O Q, ESC O R, ESC O S
                             this.props.onKeyPress('\x1bO' + String.fromCharCode(79 + num));
                         } else if (num >= 5 && num <= 8) {
-                            // F5-F8: ESC [ 15 ~, ESC [ 17 ~, ESC [ 18 ~, ESC [ 19 ~
                             const codeMap = [15, 17, 18, 19];
                             this.props.onKeyPress(`\x1b[${codeMap[num - 5]}~`);
                         } else if (num >= 9 && num <= 12) {
-                            // F9-F12: ESC [ 20 ~, ESC [ 21 ~, ESC [ 23 ~, ESC [ 24 ~
                             const codeMap = [20, 21, 23, 24];
                             this.props.onKeyPress(`\x1b[${codeMap[num - 9]}~`);
                         }
                     }
                     break;
             }
+            this.setState({ ctrlActive: false, altActive: false, shiftActive: false });
         }
     }
 
@@ -143,14 +143,20 @@ export class Keyboard extends Component<Props, State> {
     @bind
     private handleNativeKeyboardToggle(e: PointerEvent) {
         e.preventDefault();
-        this.setState({ nativeKeyboardActive: !this.state.nativeKeyboardActive });
         this.props.onToggleNativeKeyboard();
     }
 
     render() {
-        const { mode, ctrlActive, altActive, shiftActive, nativeKeyboardActive } = this.state;
+        const { nativeKeyboardActive } = this.props;
+        const { mode, ctrlActive, altActive, shiftActive } = this.state;
 
-        const renderKey = (label: string, type: 'char' | 'special', value: string, extraClass = '') => {
+        const renderKey = (
+            label: string,
+            type: 'char' | 'special',
+            value: string,
+            extraClass = '',
+            ariaLabel?: string
+        ) => {
             let activeClass = '';
             if (value === 'CTRL' && ctrlActive) activeClass = 'active';
             if (value === 'ALT' && altActive) activeClass = 'active';
@@ -158,6 +164,7 @@ export class Keyboard extends Component<Props, State> {
 
             return (
                 <button
+                    aria-label={ariaLabel || label}
                     className={`kbd-key ${type} ${extraClass} ${activeClass}`}
                     onPointerDown={e => this.handleKey(e, type, value)}
                 >
@@ -176,18 +183,20 @@ export class Keyboard extends Component<Props, State> {
             <div className={`virtual-keyboard-container ${nativeKeyboardActive ? 'collapsed' : ''}`}>
                 <div className="keyboard-header">
                     {!nativeKeyboardActive && (
-                        <button className="header-btn" onPointerDown={this.toggleMode}>
+                        <button className="header-btn" aria-label="Toggle input mode" onPointerDown={this.toggleMode}>
                             {mode === 'terminal' ? '⌨️ Text Input' : '⚙️ Terminal Keys'}
                         </button>
                     )}
                     <button
                         className={`header-btn ${nativeKeyboardActive ? 'active' : ''}`}
+                        aria-label="Toggle native mobile keyboard"
                         onPointerDown={this.handleNativeKeyboardToggle}
                     >
                         {nativeKeyboardActive ? '📱 Block Mobile KB' : '🌐 Show Mobile KB (IME)'}
                     </button>
                     <button
                         className="header-btn close"
+                        aria-label="Hide virtual keyboard"
                         onPointerDown={e => {
                             e.preventDefault();
                             this.props.onClose();
@@ -201,14 +210,16 @@ export class Keyboard extends Component<Props, State> {
                     <div className="keyboard-body">
                         {mode === 'terminal' ? (
                             <div className="layout-terminal">
-                                {/* Row 1: Modifier and Core Actions */}
+                                {/* Row 1: Modifier, Quick Shortcuts, and Core Actions */}
                                 <div className="kbd-row">
-                                    {renderKey('ESC', 'special', 'ESC', 'key-fn')}
-                                    {renderKey('TAB', 'special', 'TAB', 'key-fn')}
-                                    {renderKey('CTRL', 'special', 'CTRL', 'key-modifier')}
-                                    {renderKey('ALT', 'special', 'ALT', 'key-modifier')}
-                                    {renderKey('INS', 'special', 'INS', 'key-fn')}
-                                    {renderKey('DEL', 'special', 'DEL', 'key-fn')}
+                                    {renderKey('ESC', 'special', 'ESC', 'key-fn', 'Escape')}
+                                    {renderKey('TAB', 'special', 'TAB', 'key-fn', 'Tab')}
+                                    {renderKey('CTRL', 'special', 'CTRL', 'key-modifier', 'Control')}
+                                    {renderKey('ALT', 'special', 'ALT', 'key-modifier', 'Alt')}
+                                    {renderKey('^C', 'special', 'CTRL_C', 'key-fn key-shortcut', 'Control C')}
+                                    {renderKey('^D', 'special', 'CTRL_D', 'key-fn key-shortcut', 'Control D')}
+                                    {renderKey('INS', 'special', 'INS', 'key-fn', 'Insert')}
+                                    {renderKey('DEL', 'special', 'DEL', 'key-fn', 'Delete')}
                                 </div>
                                 {/* Row 2: Function Keys F1-F6 */}
                                 <div className="kbd-row">
@@ -230,20 +241,20 @@ export class Keyboard extends Component<Props, State> {
                                 </div>
                                 {/* Row 4: Navigation / Edit Actions */}
                                 <div className="kbd-row">
-                                    {renderKey('HOME', 'special', 'HOME', 'key-fn')}
-                                    {renderKey('END', 'special', 'END', 'key-fn')}
-                                    {renderKey('PGUP', 'special', 'PGUP', 'key-fn')}
-                                    {renderKey('PGDN', 'special', 'PGDN', 'key-fn')}
-                                    {renderKey('BKSP', 'special', 'BACKSPACE', 'key-fn wide')}
+                                    {renderKey('HOME', 'special', 'HOME', 'key-fn', 'Home')}
+                                    {renderKey('END', 'special', 'END', 'key-fn', 'End')}
+                                    {renderKey('PGUP', 'special', 'PGUP', 'key-fn', 'Page Up')}
+                                    {renderKey('PGDN', 'special', 'PGDN', 'key-fn', 'Page Down')}
+                                    {renderKey('BKSP', 'special', 'BACKSPACE', 'key-fn wide', 'Backspace')}
                                 </div>
                                 {/* Row 5: Arrows and Space / Enter */}
                                 <div className="kbd-row">
-                                    {renderKey('◀', 'special', 'LEFT', 'key-arrow')}
-                                    {renderKey('▲', 'special', 'UP', 'key-arrow')}
-                                    {renderKey('▼', 'special', 'DOWN', 'key-arrow')}
-                                    {renderKey('▶', 'special', 'RIGHT', 'key-arrow')}
-                                    {renderKey('SPACE', 'special', 'SPACE', 'key-space')}
-                                    {renderKey('ENTER', 'special', 'ENTER', 'key-enter')}
+                                    {renderKey('◀', 'special', 'LEFT', 'key-arrow', 'Left Arrow')}
+                                    {renderKey('▲', 'special', 'UP', 'key-arrow', 'Up Arrow')}
+                                    {renderKey('▼', 'special', 'DOWN', 'key-arrow', 'Down Arrow')}
+                                    {renderKey('▶', 'special', 'RIGHT', 'key-arrow', 'Right Arrow')}
+                                    {renderKey('SPACE', 'special', 'SPACE', 'key-space', 'Space')}
+                                    {renderKey('ENTER', 'special', 'ENTER', 'key-enter', 'Enter')}
                                 </div>
                             </div>
                         ) : (
@@ -252,23 +263,35 @@ export class Keyboard extends Component<Props, State> {
                                     <div className="kbd-row" key={idx}>
                                         {row.map(key => {
                                             if (key === 'SHIFT') {
-                                                return renderKey('⇧', 'special', 'SHIFT', 'key-modifier wide');
+                                                return renderKey('⇧', 'special', 'SHIFT', 'key-modifier wide', 'Shift');
                                             }
                                             if (key === 'BACKSPACE') {
-                                                return renderKey('⌫', 'special', 'BACKSPACE', 'key-fn wide');
+                                                return renderKey(
+                                                    '⌫',
+                                                    'special',
+                                                    'BACKSPACE',
+                                                    'key-fn wide',
+                                                    'Backspace'
+                                                );
                                             }
-                                            return renderKey(shiftActive ? key : key.toLowerCase(), 'char', key);
+                                            return renderKey(
+                                                shiftActive ? key : key.toLowerCase(),
+                                                'char',
+                                                key,
+                                                '',
+                                                `Key ${key}`
+                                            );
                                         })}
                                     </div>
                                 ))}
                                 {/* QWERTY Row 4: Modifiers, Space, Enter */}
                                 <div className="kbd-row">
-                                    {renderKey('CTRL', 'special', 'CTRL', 'key-modifier')}
-                                    {renderKey('ALT', 'special', 'ALT', 'key-modifier')}
-                                    {renderKey('SPACE', 'special', 'SPACE', 'key-space')}
-                                    {renderKey('/', 'char', '/')}
-                                    {renderKey('-', 'char', '-')}
-                                    {renderKey('ENTER', 'special', 'ENTER', 'key-enter wide')}
+                                    {renderKey('CTRL', 'special', 'CTRL', 'key-modifier', 'Control')}
+                                    {renderKey('ALT', 'special', 'ALT', 'key-modifier', 'Alt')}
+                                    {renderKey('SPACE', 'special', 'SPACE', 'key-space', 'Space')}
+                                    {renderKey('/', 'char', '/', '', 'Slash')}
+                                    {renderKey('-', 'char', '-', '', 'Dash')}
+                                    {renderKey('ENTER', 'special', 'ENTER', 'key-enter wide', 'Enter')}
                                 </div>
                             </div>
                         )}

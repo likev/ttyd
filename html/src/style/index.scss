@@ -4,15 +4,25 @@ body {
   min-height: 100%;
   margin: 0;
   overflow: hidden;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  position: fixed;
+  width: 100%;
 }
 
 #terminal-container {
   width: auto;
   height: 100%;
   margin: 0 auto;
-  padding: 0;
+  padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) 0 env(safe-area-inset-left, 0);
+  box-sizing: border-box;
+
   .terminal {
     padding: 5px;
     height: calc(100% - 10px);
   }
 }
+

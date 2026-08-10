@@ -38,6 +38,13 @@ type Preferences = ITerminalOptions & ClientOptions;
 
 export type RendererType = 'dom' | 'canvas' | 'webgl';
 
+export function isMobileDevice(): boolean {
+    return (
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+        (navigator.maxTouchPoints > 0 && /Macintosh/i.test(navigator.userAgent))
+    );
+}
+
 export interface ClientOptions {
     rendererType: RendererType;
     disableLeaveAlert: boolean;
@@ -49,6 +56,8 @@ export interface ClientOptions {
     isWindows: boolean;
     trzszDragInitTimeout: number;
     unicodeVersion: string;
+    mobileFontSize?: number;
+    columns?: number;
 }
 
 export interface FlowControl {
@@ -148,11 +157,17 @@ export class Xterm {
 
     @bind
     public open(parent: HTMLElement) {
+        if (isMobileDevice()) {
+            const mobileSize = this.options.clientOptions.mobileFontSize || 16;
+            if ((this.options.termOptions.fontSize || 13) < mobileSize) {
+                this.options.termOptions.fontSize = mobileSize;
+            }
+        }
         this.terminal = new Terminal(this.options.termOptions);
         const { terminal, fitAddon, overlayAddon } = this;
         window.term = terminal as TtydTerminal;
         window.term.fit = () => {
-            this.fitAddon.fit();
+            this.fit();
         };
 
         terminal.loadAddon(fitAddon);
@@ -160,12 +175,16 @@ export class Xterm {
         terminal.loadAddon(new WebLinksAddon());
 
         terminal.open(parent);
-        fitAddon.fit();
+        this.fit();
     }
 
     @bind
     public fit() {
         this.fitAddon.fit();
+        if (this.terminal && this.terminal.cols < 30 && (this.terminal.options.fontSize || 13) > 10) {
+            this.terminal.options.fontSize = Math.max(10, (this.terminal.options.fontSize || 13) - 1);
+            this.fitAddon.fit();
+        }
     }
 
     @bind
@@ -428,6 +447,17 @@ export class Xterm {
                     break;
                 case 'isWindows':
                     if (value) console.log('[ttyd] is windows');
+                    break;
+                case 'mobileFontSize':
+                    if (isMobileDevice() && typeof value === 'number' && value > 0) {
+                        terminal.options.fontSize = value;
+                        this.fit();
+                    }
+                    break;
+                case 'columns':
+                    if (typeof value === 'number' && value > 0) {
+                        terminal.resize(value, terminal.rows);
+                    }
                     break;
                 case 'unicodeVersion':
                     switch (value) {

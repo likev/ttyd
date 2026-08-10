@@ -53,6 +53,9 @@ ttyd 1 "September 2016" ttyd "User Manual"
   -W, --writable
       Allow clients to write to the TTY (readonly by default)
 
+  -r, --rate-limit <true/false>
+      Enable/disable IP rate-limiting for failed auth attempts (default: true)
+
   -t, --client-option <key=value>
       Send option to client (format: key=value), repeat to add more options, see **CLIENT OPTIONS** for details
 
@@ -123,8 +126,19 @@ ttyd has a mechanism to pass server side command-line arguments to the browser p
 - `-t enableZmodem=true`: enable [ZMODEM](https://en.wikipedia.org/wiki/ZMODEM) / [lrzsz](https://ohse.de/uwe/software/lrzsz.html) file transfer support
 - `-t enableTrzsz=true`: enable [trzsz](https://trzsz.github.io) file transfer support
 - `-t enableSixel=true`: enable [Sixel](https://en.wikipedia.org/wiki/Sixel) image output support ([Usage](https://saitoha.github.io/libsixel/))
+- `-t mobileFontSize=16`: set font size used on mobile devices (default: `16`)
+- `-t columns=80`: set initial terminal columns on connection
 - `-t titleFixed=hello`: set a fixed title for the browser window
 - `-t fontSize=20`: change the font size of the terminal
+
+## Mobile usage
+
+ttyd includes built-in touch and virtual keyboard optimizations for mobile devices:
+- Includes terminal-specific keys (Ctrl, Alt, Esc, arrows, function keys, Ctrl+C/D shortcuts)
+- Pinch-to-zoom is disabled (`user-scalable=no`) and safe-area insets (notch/dynamic island) are respected
+- Tap anywhere on the terminal to focus and open the virtual keyboard
+- Long press on the terminal to paste clipboard text
+- Tap "Show Mobile KB (IME)" on the virtual keyboard toolbar to activate native IME keyboard for CJK input
 
 ## Advanced usage
 

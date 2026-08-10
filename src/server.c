@@ -138,7 +138,7 @@ static void print_help() {
 
 static void print_config() {
   lwsl_notice("tty configuration:\n");
-  if (server->credential != NULL) lwsl_notice("  credential: %s\n", server->credential);
+  if (server->credential != NULL) lwsl_notice("  credential: ***\n");
   lwsl_notice("  start command: %s\n", server->command);
   lwsl_notice("  close signal: %s (%d)\n", server->sig_name, server->sig_code);
   lwsl_notice("  terminal type: %s\n", server->terminal_type);
@@ -160,8 +160,28 @@ static void print_config() {
   if (!server->writable) lwsl_notice("The --writable option is not set, will start in readonly mode");
 }
 
+#define MAX_FAILED_ATTEMPTS 1000
+
 void add_failed_attempt(const char *ip) {
-  if (ip == NULL || ip[0] == '\0') return;
+  if (ip == NULL || ip[0] == '\0' || server->auth_header != NULL) return;
+
+  // Prune list if it exceeds capacity
+  int total = 0;
+  failed_attempt_t **curr = &server->failed_attempts;
+  while (*curr != NULL) {
+    total++;
+    if (total >= MAX_FAILED_ATTEMPTS) {
+      failed_attempt_t *tmp = *curr;
+      *curr = NULL;
+      while (tmp != NULL) {
+        failed_attempt_t *next = tmp->next;
+        free(tmp);
+        tmp = next;
+      }
+      break;
+    }
+    curr = &(*curr)->next;
+  }
 
   failed_attempt_t *attempt = xmalloc(sizeof(failed_attempt_t));
   strncpy(attempt->ip, ip, sizeof(attempt->ip) - 1);
@@ -477,8 +497,10 @@ int main(int argc, char **argv) {
       case 'I':
         if (!strncmp(optarg, "~/", 2)) {
           const char *home = getenv("HOME");
-          server->index = malloc(strlen(home) + strlen(optarg) - 1);
-          sprintf(server->index, "%s%s", home, optarg + 1);
+          if (home == NULL) home = "";
+          size_t len = strlen(home) + strlen(optarg);
+          server->index = xmalloc(len + 1);
+          snprintf(server->index, len + 1, "%s%s", home, optarg + 1);
         } else {
           server->index = strdup(optarg);
         }
@@ -542,8 +564,11 @@ int main(int argc, char **argv) {
       case 'r':
         if (strcmp(optarg, "false") == 0 || strcmp(optarg, "0") == 0 || strcmp(optarg, "off") == 0) {
           server->rate_limit = false;
-        } else {
+        } else if (strcmp(optarg, "true") == 0 || strcmp(optarg, "1") == 0 || strcmp(optarg, "on") == 0) {
           server->rate_limit = true;
+        } else {
+          fprintf(stderr, "ttyd: invalid rate-limit value: %s, expected: true/false\n", optarg);
+          return -1;
         }
         break;
       case '?':

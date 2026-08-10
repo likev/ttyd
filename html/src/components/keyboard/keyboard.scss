@@ -1,3 +1,10 @@
+:root {
+  --kbd-header-height: 44px;
+  --kbd-body-height: 226px;
+  --kbd-total-height: 270px;
+  --kbd-collapsed-height: 54px;
+}
+
 .virtual-keyboard-container {
   position: fixed;
   bottom: 0;
@@ -121,6 +128,12 @@
     color: #a0a0a0;
   }
 
+  &.key-shortcut {
+    background: rgba(237, 137, 54, 0.15);
+    border-color: rgba(237, 137, 54, 0.25);
+    color: #fbd38d;
+  }
+
   &.key-modifier {
     background: rgba(66, 153, 225, 0.15);
     border-color: rgba(66, 153, 225, 0.25);
@@ -159,3 +172,16 @@
     flex-grow: 1.5;
   }
 }
+
+@media (max-height: 500px) {
+  .kbd-key {
+    height: 32px;
+    font-size: 12px;
+  }
+
+  .layout-terminal,
+  .layout-qwerty {
+    gap: 3px;
+  }
+}
+

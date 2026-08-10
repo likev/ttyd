@@ -56,7 +56,7 @@ char *lowercase(char *s) {
 bool endswith(const char *str, const char *suffix) {
   size_t str_len = strlen(str);
   size_t suffix_len = strlen(suffix);
-  return str_len > suffix_len && !strcmp(str + (str_len - suffix_len), suffix);
+  return str_len >= suffix_len && !strcmp(str + (str_len - suffix_len), suffix);
 }
 
 int get_sig_name(int sig, char *buf, size_t len) {
@@ -68,8 +68,10 @@ int get_sig_name(int sig, char *buf, size_t len) {
 int get_sig(const char *sig_name) {
   for (int sig = 1; sig < NSIG; sig++) {
     const char *name = sys_signame[sig];
-    if (name != NULL && (strcasecmp(name, sig_name) == 0 || strcasecmp(name, sig_name + 3) == 0))
-      return sig;
+    if (name != NULL) {
+      if (strcasecmp(name, sig_name) == 0) return sig;
+      if (strncasecmp(sig_name, "SIG", 3) == 0 && strcasecmp(name, sig_name + 3) == 0) return sig;
+    }
   }
   return atoi(sig_name);
 }

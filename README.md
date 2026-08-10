@@ -76,6 +76,7 @@ OPTIONS:
     -w, --cwd               Working directory to be set for the child program
     -a, --url-arg           Allow client to send command line arguments in URL (eg: http://localhost:7681?arg=foo&arg=bar)
     -W, --writable          Allow clients to write to the TTY (readonly by default)
+    -r, --rate-limit        Enable/disable IP rate-limiting for failed auth (default: true, format: true/false)
     -t, --client-option     Send option to client (format: key=value), repeat to add more options
     -T, --terminal-type     Terminal type to report, default: xterm-256color
     -O, --check-origin      Do not allow websocket connection from different origin
@@ -98,9 +99,14 @@ OPTIONS:
 
 Read the example usage on the [wiki](https://github.com/tsl0922/ttyd/wiki/Example-Usage).
 
-## Browser Support
+## Mobile Support
 
-Modern browsers, See [Browser Support](https://github.com/xtermjs/xterm.js#browser-support).
+ttyd is optimized for mobile touch devices (iOS, Android, iPadOS):
+- Built-in virtual keyboard with terminal control keys (Ctrl, Alt, Esc, arrows, function keys, Ctrl+C/Ctrl+D)
+- Automatic viewport scaling (`width=device-width`) and pinch-zoom prevention
+- Dynamic safe-area inset adjustment for notch / dynamic island displays
+- Touch interactions: tap terminal to focus, long press to paste clipboard text
+- Native keyboard toggle for IME input (CJK typing)
 
 ## Alternatives
 

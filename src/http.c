@@ -31,6 +31,7 @@ static int send_too_many_requests(struct lws *wsi) {
   end = p + sizeof(buffer) - LWS_PRE;
 
   if (lws_add_http_header_status(wsi, 429, &p, end) ||
+      lws_add_http_header_by_token(wsi, WSI_TOKEN_HTTP_RETRY_AFTER, (unsigned char *)"300", 3, &p, end) ||
       lws_add_http_header_content_length(wsi, 0, &p, end) || lws_finalize_http_header(wsi, &p, end) ||
       lws_write(wsi, buffer + LWS_PRE, p - (buffer + LWS_PRE), LWS_WRITE_HTTP_HEADERS) < 0)
     return AUTH_FAIL;
@@ -40,7 +41,7 @@ static int send_too_many_requests(struct lws *wsi) {
 
 static int check_auth(struct lws *wsi, struct pss_http *pss) {
   char rip[50] = "";
-  if (server->rate_limit && (server->credential != NULL || server->auth_header != NULL)) {
+  if (server->rate_limit && server->credential != NULL && server->auth_header == NULL) {
     lws_get_peer_simple(lws_get_network_wsi(wsi), rip, sizeof(rip));
     if (is_ip_blocked(rip)) {
       return send_too_many_requests(wsi);
@@ -49,20 +50,15 @@ static int check_auth(struct lws *wsi, struct pss_http *pss) {
 
   if (server->auth_header != NULL) {
     if (lws_hdr_custom_length(wsi, server->auth_header, strlen(server->auth_header)) > 0) return AUTH_OK;
-    if (server->rate_limit) {
-      if (rip[0] == '\0') lws_get_peer_simple(lws_get_network_wsi(wsi), rip, sizeof(rip));
-      add_failed_attempt(rip);
-    }
     return send_unauthorized(wsi, HTTP_STATUS_PROXY_AUTH_REQUIRED, WSI_TOKEN_HTTP_PROXY_AUTHENTICATE);
   }
 
   if (server->credential != NULL) {
     char buf[256];
     int len = lws_hdr_copy(wsi, buf, sizeof(buf), WSI_TOKEN_HTTP_AUTHORIZATION);
-    if (len >= 7 && strstr(buf, "Basic ")) {
-      if (!strcmp(buf + 6, server->credential)) return AUTH_OK;
-    }
-    if (server->rate_limit) {
+    bool presented = len >= 7 && strstr(buf, "Basic ");
+    if (presented && !strcmp(buf + 6, server->credential)) return AUTH_OK;
+    if (presented && server->rate_limit) {
       if (rip[0] == '\0') lws_get_peer_simple(lws_get_network_wsi(wsi), rip, sizeof(rip));
       add_failed_attempt(rip);
     }
@@ -144,16 +140,20 @@ int callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 
       if (strcmp(pss->path, endpoints.token) == 0) {
         const char *credential = server->credential != NULL ? server->credential : "";
-        size_t n = sprintf(buf, "{\"token\": \"%s\"}", credential);
+        size_t token_buf_len = strlen(credential) + 32;
+        char *token_buf = xmalloc(token_buf_len);
+        size_t n = snprintf(token_buf, token_buf_len, "{\"token\": \"%s\"}", credential);
         if (lws_add_http_header_status(wsi, HTTP_STATUS_OK, &p, end) ||
             lws_add_http_header_by_token(wsi, WSI_TOKEN_HTTP_CONTENT_TYPE,
                                          (unsigned char *)"application/json;charset=utf-8", 30, &p, end) ||
             lws_add_http_header_content_length(wsi, (unsigned long)n, &p, end) ||
             lws_finalize_http_header(wsi, &p, end) ||
-            lws_write(wsi, buffer + LWS_PRE, p - (buffer + LWS_PRE), LWS_WRITE_HTTP_HEADERS) < 0)
+            lws_write(wsi, buffer + LWS_PRE, p - (buffer + LWS_PRE), LWS_WRITE_HTTP_HEADERS) < 0) {
+          free(token_buf);
           return 1;
+        }
 
-        pss->buffer = pss->ptr = strdup(buf);
+        pss->buffer = pss->ptr = token_buf;
         pss->len = n;
         lws_callback_on_writable(wsi);
         break;

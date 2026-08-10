@@ -23,7 +23,7 @@ static int send_initial_message(struct lws *wsi, int index) {
   switch (cmd) {
     case SET_WINDOW_TITLE:
       gethostname(buffer, sizeof(buffer) - 1);
-      n = sprintf((char *)p, "%c%s (%s)", cmd, server->command, buffer);
+      n = snprintf((char *)p, 4096, "%c%s (%s)", cmd, server->command, buffer);
       break;
     case SET_PREFERENCES:
       n = sprintf((char *)p, "%c%s", cmd, server->prefs_json);
@@ -182,7 +182,7 @@ static void wsi_output(struct lws *wsi, pty_buf_t *buf) {
 
 static bool check_auth(struct lws *wsi, struct pss_tty *pss) {
   char rip[50] = "";
-  if (server->rate_limit && (server->credential != NULL || server->auth_header != NULL)) {
+  if (server->rate_limit && server->credential != NULL && server->auth_header == NULL) {
     lws_get_peer_simple(lws_get_network_wsi(wsi), rip, sizeof(rip));
     if (is_ip_blocked(rip)) {
       return false;
@@ -190,19 +190,15 @@ static bool check_auth(struct lws *wsi, struct pss_tty *pss) {
   }
 
   if (server->auth_header != NULL) {
-    bool ok = lws_hdr_custom_copy(wsi, pss->user, sizeof(pss->user), server->auth_header, strlen(server->auth_header)) > 0;
-    if (!ok && server->rate_limit) {
-      if (rip[0] == '\0') lws_get_peer_simple(lws_get_network_wsi(wsi), rip, sizeof(rip));
-      add_failed_attempt(rip);
-    }
-    return ok;
+    return lws_hdr_custom_copy(wsi, pss->user, sizeof(pss->user), server->auth_header, strlen(server->auth_header)) > 0;
   }
 
   if (server->credential != NULL) {
     char buf[256];
     size_t n = lws_hdr_copy(wsi, buf, sizeof(buf), WSI_TOKEN_HTTP_AUTHORIZATION);
-    bool ok = n >= 7 && strstr(buf, "Basic ") && !strcmp(buf + 6, server->credential);
-    if (!ok && server->rate_limit) {
+    bool presented = n >= 7 && strstr(buf, "Basic ");
+    bool ok = presented && !strcmp(buf + 6, server->credential);
+    if (!ok && presented && server->rate_limit) {
       if (rip[0] == '\0') lws_get_peer_simple(lws_get_network_wsi(wsi), rip, sizeof(rip));
       add_failed_attempt(rip);
     }
@@ -314,6 +310,10 @@ int callback_tty(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
       // check auth
       if (server->credential != NULL && !pss->authenticated && command != JSON_DATA) {
         lwsl_warn("WS client not authenticated\n");
+        if (pss->buffer != NULL) {
+          free(pss->buffer);
+          pss->buffer = NULL;
+        }
         return 1;
       }
 
@@ -350,7 +350,8 @@ int callback_tty(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
           json_object *obj = parse_window_size(pss->buffer, pss->len, &columns, &rows);
           if (server->credential != NULL) {
             struct json_object *o = NULL;
-            if (json_object_object_get_ex(obj, "AuthToken", &o)) {
+            bool token_presented = json_object_object_get_ex(obj, "AuthToken", &o);
+            if (token_presented) {
               const char *token = json_object_get_string(o);
               if (token != NULL && !strcmp(token, server->credential))
                 pss->authenticated = true;
@@ -358,13 +359,17 @@ int callback_tty(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
                 lwsl_warn("WS authentication failed with token: %s\n", token);
             }
             if (!pss->authenticated) {
-              if (server->rate_limit) {
+              if (server->rate_limit && token_presented && server->auth_header == NULL) {
                 char rip[50];
                 lws_get_peer_simple(lws_get_network_wsi(wsi), rip, sizeof(rip));
                 add_failed_attempt(rip);
               }
               json_object_put(obj);
               lws_close_reason(wsi, LWS_CLOSE_STATUS_POLICY_VIOLATION, NULL, 0);
+              if (pss->buffer != NULL) {
+                free(pss->buffer);
+                pss->buffer = NULL;
+              }
               return -1;
             }
           }
