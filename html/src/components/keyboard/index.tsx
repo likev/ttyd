@@ -135,17 +135,6 @@ export class Keyboard extends Component<Props, State> {
     }
 
     @bind
-    private toggleMode(e: PointerEvent) {
-        e.preventDefault();
-        const nextMode: Record<State['mode'], State['mode']> = {
-            terminal: 'qwerty',
-            qwerty: 'symbols',
-            symbols: 'terminal',
-        };
-        this.setState({ mode: nextMode[this.state.mode] });
-    }
-
-    @bind
     private handleNativeKeyboardToggle(e: PointerEvent) {
         e.preventDefault();
         this.props.onToggleNativeKeyboard();
@@ -188,10 +177,39 @@ export class Keyboard extends Component<Props, State> {
             <div className={`virtual-keyboard-container ${nativeKeyboardActive ? 'collapsed' : ''}`}>
                 <div className="keyboard-header">
                     {!nativeKeyboardActive && (
-                        <button className="header-btn" aria-label="Toggle input mode" onPointerDown={this.toggleMode}>
-                            {mode === 'terminal' && '⚙️ Terminal Keys'}
-                            {mode === 'qwerty' && '🔤 Text (ABC)'}
-                            {mode === 'symbols' && '1️⃣ Numbers & Symbols'}
+                        <button
+                            className={`header-btn ${mode === 'terminal' ? 'active' : ''}`}
+                            aria-label="Terminal Keys layout"
+                            onPointerDown={e => {
+                                e.preventDefault();
+                                this.setState({ mode: 'terminal' });
+                            }}
+                        >
+                            ⚙️ Keys
+                        </button>
+                    )}
+                    {!nativeKeyboardActive && (
+                        <button
+                            className={`header-btn ${mode === 'qwerty' ? 'active' : ''}`}
+                            aria-label="Text QWERTY layout"
+                            onPointerDown={e => {
+                                e.preventDefault();
+                                this.setState({ mode: 'qwerty' });
+                            }}
+                        >
+                            🔤 ABC
+                        </button>
+                    )}
+                    {!nativeKeyboardActive && (
+                        <button
+                            className={`header-btn ${mode === 'symbols' ? 'active' : ''}`}
+                            aria-label="Numbers and Symbols layout"
+                            onPointerDown={e => {
+                                e.preventDefault();
+                                this.setState({ mode: 'symbols' });
+                            }}
+                        >
+                            1️⃣ #+=
                         </button>
                     )}
                     <button
@@ -199,7 +217,7 @@ export class Keyboard extends Component<Props, State> {
                         aria-label="Toggle native mobile keyboard"
                         onPointerDown={this.handleNativeKeyboardToggle}
                     >
-                        {nativeKeyboardActive ? '📱 Block Mobile KB' : '🌐 Show Mobile KB (IME)'}
+                        {nativeKeyboardActive ? '📱 Block' : '🌐 IME'}
                     </button>
                     <button
                         className="header-btn close"

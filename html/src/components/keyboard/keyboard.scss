@@ -35,18 +35,21 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   margin-bottom: 8px;
-  padding: 0 4px;
+  padding: 0 2px;
+  width: 100%;
 }
 
 .header-btn {
+  flex: 1;
+  min-width: 0;
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 6px;
-  padding: 6px 10px;
-  font-size: 13px;
+  padding: 6px 2px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   outline: none;
@@ -55,6 +58,7 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
+  text-align: center;
 
   &:active {
     background: rgba(255, 255, 255, 0.2);
@@ -65,7 +69,7 @@
     background: rgba(235, 87, 87, 0.2);
     border-color: rgba(235, 87, 87, 0.3);
     color: #ff8080;
-    flex-shrink: 0;
+    flex: 1;
 
     &:active {
       background: rgba(235, 87, 87, 0.3);
@@ -76,6 +80,7 @@
     background: rgba(72, 187, 120, 0.3) !important;
     border-color: rgba(72, 187, 120, 0.4);
     color: #9ae6b4;
+    font-weight: bold;
   }
 }
 
