@@ -11,8 +11,10 @@ interface Props {
 
 interface KeyDef {
     key: string;
-    upper: string;
-    sym: string;
+    upper?: string;
+    sym?: string;
+    fnLabel?: string;
+    fnSeq?: string;
 }
 
 const QWERTY_ROW_1: KeyDef[] = [
@@ -48,6 +50,25 @@ const QWERTY_ROW_3: KeyDef[] = [
     { key: 'b', upper: 'B', sym: ':' },
     { key: 'n', upper: 'N', sym: ';' },
     { key: 'm', upper: 'M', sym: '/' },
+];
+
+const SYMBOLS_NUM_ROW: KeyDef[] = [
+    { key: '1', fnLabel: 'F1', fnSeq: '\x1bOP' },
+    { key: '2', fnLabel: 'F2', fnSeq: '\x1bOQ' },
+    { key: '3', fnLabel: 'F3', fnSeq: '\x1bOR' },
+    { key: '4', fnLabel: 'F4', fnSeq: '\x1bOS' },
+    { key: '5', fnLabel: 'F5', fnSeq: '\x1b[15~' },
+    { key: '6', fnLabel: 'F6', fnSeq: '\x1b[17~' },
+    { key: '7', fnLabel: 'F7', fnSeq: '\x1b[18~' },
+    { key: '8', fnLabel: 'F8', fnSeq: '\x1b[19~' },
+    { key: '9', fnLabel: 'F9', fnSeq: '\x1b[20~' },
+    { key: '0', fnLabel: 'F10', fnSeq: '\x1b[21~' },
+];
+
+const SYMBOLS_ROW_2: (string | KeyDef)[] = [
+    '+', '=', '[', ']', '{', '}', '<', '>',
+    { key: '\\', fnLabel: 'F11', fnSeq: '\x1b[23~' },
+    { key: '|', fnLabel: 'F12', fnSeq: '\x1b[24~' },
 ];
 
 function vibrate(duration = 15) {
@@ -113,13 +134,17 @@ const BackspaceIcon = () => (
     </svg>
 );
 
+interface PopupCandidate {
+    id: string;
+    label: string;
+    value: string;
+    isFn?: boolean;
+}
+
 interface PopupState {
     pointerId: number;
-    key: string;
-    upper: string;
-    symbol: string;
-    lower: string;
-    selected: 'upper' | 'symbol' | 'lower' | null;
+    candidates: PopupCandidate[];
+    selectedIndex: number | null;
     left: number;
     top: number;
 }
@@ -329,7 +354,7 @@ export class Keyboard extends Component<Props, State> {
             // ignore
         }
 
-        const timer = window.setTimeout(() => {
+        const timer = (keyDef.fnSeq || keyDef.sym) ? window.setTimeout(() => {
             const ptr = this.activePointers.get(pointerId);
             if (!ptr) return;
             ptr.longPressFired = true;
@@ -346,27 +371,48 @@ export class Keyboard extends Component<Props, State> {
             const keyCenterX = keyRect.left + keyRect.width / 2 - containerRect.left;
             const keyTop = keyRect.top - containerRect.top;
 
-            const isLandscape = window.innerHeight <= 500;
-            const popupWidth = isLandscape ? 116 : 140;
-            const popupHeight = isLandscape ? 42 : 50;
+            let candidates: PopupCandidate[] = [];
+            let defaultIndex = 1;
 
-            const desiredLeft = keyCenterX - popupWidth / 2;
+            if (keyDef.fnLabel && keyDef.fnSeq) {
+                candidates = [
+                    { id: 'char', label: keyDef.key, value: keyDef.key, isFn: false },
+                    { id: 'fn', label: keyDef.fnLabel, value: keyDef.fnSeq, isFn: true },
+                ];
+                defaultIndex = 1;
+            } else if (keyDef.upper && keyDef.sym) {
+                candidates = [
+                    { id: 'upper', label: keyDef.upper, value: keyDef.upper, isFn: false },
+                    { id: 'symbol', label: keyDef.sym, value: keyDef.sym, isFn: false },
+                    { id: 'lower', label: keyDef.key, value: keyDef.key, isFn: false },
+                ];
+                defaultIndex = 1;
+            } else {
+                return;
+            }
+
+            const isLandscape = window.innerHeight <= 500;
+            const isTwoItem = candidates.length === 2;
+            const popupWidth = isTwoItem ? (isLandscape ? 84 : 96) : (isLandscape ? 116 : 140);
+            const popupHeight = isLandscape ? 40 : 48;
+
+            let desiredLeft = keyCenterX - popupWidth / 2;
+            if (isTwoItem) {
+                desiredLeft = keyCenterX - popupWidth * 0.72;
+            }
             const clampedLeft = Math.max(8, Math.min(desiredLeft, containerRect.width - popupWidth - 8));
             const top = keyTop - popupHeight - 4;
 
             this.activePopup = {
                 pointerId,
-                key: keyDef.key,
-                upper: keyDef.upper,
-                symbol: keyDef.sym,
-                lower: keyDef.key,
-                selected: 'symbol',
+                candidates,
+                selectedIndex: defaultIndex,
                 left: clampedLeft,
                 top,
             };
 
             this.updateKeyboardState({ activePopup: this.activePopup });
-        }, 300);
+        }, 300) : null;
 
         this.activePointers.set(pointerId, {
             pointerId,
@@ -411,8 +457,8 @@ export class Keyboard extends Component<Props, State> {
         const activePopup = this.activePopup;
         if (activePopup && activePopup.pointerId === e.pointerId) {
             if (deltaY < -90 || deltaY > 60) {
-                if (activePopup.selected !== null) {
-                    activePopup.selected = null;
+                if (activePopup.selectedIndex !== null) {
+                    activePopup.selectedIndex = null;
                     this.updateKeyboardState({
                         activePopup: { ...activePopup },
                     });
@@ -420,18 +466,26 @@ export class Keyboard extends Component<Props, State> {
                 return;
             }
 
-            let selected: 'upper' | 'symbol' | 'lower' = 'symbol';
-            if (deltaX < -18) {
-                selected = 'upper';
-            } else if (deltaX > 18) {
-                selected = 'lower';
-            } else {
-                selected = 'symbol';
+            let selectedIndex: number | null = 1;
+            if (activePopup.candidates.length === 2) {
+                if (deltaX < -15) {
+                    selectedIndex = 0;
+                } else {
+                    selectedIndex = 1;
+                }
+            } else if (activePopup.candidates.length === 3) {
+                if (deltaX < -18) {
+                    selectedIndex = 0;
+                } else if (deltaX > 18) {
+                    selectedIndex = 2;
+                } else {
+                    selectedIndex = 1;
+                }
             }
 
-            if (selected !== activePopup.selected) {
+            if (selectedIndex !== activePopup.selectedIndex) {
                 vibrate(10);
-                activePopup.selected = selected;
+                activePopup.selectedIndex = selectedIndex;
                 this.updateKeyboardState({
                     activePopup: { ...activePopup },
                 });
@@ -465,15 +519,16 @@ export class Keyboard extends Component<Props, State> {
                 this.sendChar(keyDef.key);
             }
         } else if (activePopup && activePopup.pointerId === e.pointerId) {
-            if (activePopup.selected === 'upper') {
-                this.sendChar(activePopup.upper);
-                vibrate(15);
-            } else if (activePopup.selected === 'lower') {
-                this.sendChar(activePopup.lower);
-                vibrate(15);
-            } else if (activePopup.selected === 'symbol') {
-                this.sendChar(activePopup.symbol);
-                vibrate(15);
+            if (activePopup.selectedIndex !== null) {
+                const cand = activePopup.candidates[activePopup.selectedIndex];
+                if (cand) {
+                    if (cand.isFn) {
+                        this.props.onKeyPress(cand.value);
+                    } else {
+                        this.sendChar(cand.value);
+                    }
+                    vibrate(15);
+                }
             }
         }
 
@@ -520,16 +575,21 @@ export class Keyboard extends Component<Props, State> {
     }
 
     @bind
-    private selectPopupChar(char: string) {
+    private selectCandidate(cand: PopupCandidate) {
         vibrate(15);
-        this.sendChar(char);
+        if (cand.isFn) {
+            this.props.onKeyPress(cand.value);
+        } else {
+            this.sendChar(cand.value);
+        }
         this.activePopup = null;
         this.updateKeyboardState({ activePopup: null });
     }
 
     @bind
-    private renderLetterKey(keyDef: KeyDef) {
+    private renderKey(keyDef: KeyDef) {
         const isPressed = !!this.state.pressedKeys[keyDef.key];
+        const subLabel = keyDef.fnLabel || keyDef.sym;
         return (
             <button
                 key={keyDef.key}
@@ -541,7 +601,7 @@ export class Keyboard extends Component<Props, State> {
                 onPointerCancel={this.handleLetterPointerCancel}
             >
                 <div className="key-char-box">
-                    <span className="key-sub-label">{keyDef.sym}</span>
+                    {subLabel && <span className="key-sub-label">{subLabel}</span>}
                     <span className="key-main-label">{keyDef.key}</span>
                 </div>
             </button>
@@ -566,36 +626,19 @@ export class Keyboard extends Component<Props, State> {
                             top: `${activePopup.top}px`,
                         }}
                     >
-                        <div
-                            className={`popup-item ${activePopup.selected === 'upper' ? 'selected' : ''}`}
-                            onPointerDown={e => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                this.selectPopupChar(activePopup.upper);
-                            }}
-                        >
-                            {activePopup.upper}
-                        </div>
-                        <div
-                            className={`popup-item ${activePopup.selected === 'symbol' ? 'selected' : ''}`}
-                            onPointerDown={e => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                this.selectPopupChar(activePopup.symbol);
-                            }}
-                        >
-                            {activePopup.symbol}
-                        </div>
-                        <div
-                            className={`popup-item ${activePopup.selected === 'lower' ? 'selected' : ''}`}
-                            onPointerDown={e => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                this.selectPopupChar(activePopup.lower);
-                            }}
-                        >
-                            {activePopup.lower}
-                        </div>
+                        {activePopup.candidates.map((cand, idx) => (
+                            <div
+                                key={cand.id}
+                                className={`popup-item ${activePopup.selectedIndex === idx ? 'selected' : ''}`}
+                                onPointerDown={e => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    this.selectCandidate(cand);
+                                }}
+                            >
+                                {cand.label}
+                            </div>
+                        ))}
                     </div>
                 )}
 
@@ -604,12 +647,12 @@ export class Keyboard extends Component<Props, State> {
                         <div className="layout-qwerty">
                             {/* Row 1: q w e r t y u i o p */}
                             <div className="kbd-row">
-                                {QWERTY_ROW_1.map(keyDef => this.renderLetterKey(keyDef))}
+                                {QWERTY_ROW_1.map(keyDef => this.renderKey(keyDef))}
                             </div>
 
                             {/* Row 2: a s d f g h j k l */}
                             <div className="kbd-row">
-                                {QWERTY_ROW_2.map(keyDef => this.renderLetterKey(keyDef))}
+                                {QWERTY_ROW_2.map(keyDef => this.renderKey(keyDef))}
                             </div>
 
                             {/* Row 3: ESC z x c v b n m BKSP */}
@@ -621,7 +664,7 @@ export class Keyboard extends Component<Props, State> {
                                 >
                                     ESC
                                 </button>
-                                {QWERTY_ROW_3.map(keyDef => this.renderLetterKey(keyDef))}
+                                {QWERTY_ROW_3.map(keyDef => this.renderKey(keyDef))}
                                 <button
                                     aria-label="Backspace"
                                     className="kbd-key key-fn key-backspace"
@@ -697,49 +740,41 @@ export class Keyboard extends Component<Props, State> {
                         </div>
                     ) : (
                         <div className="layout-symbols">
-                            {/* Row 1: Numbers 1 2 3 4 5 6 7 8 9 0 */}
+                            {/* Row 1: Numbers 1-0 with F1-F10 hold selection */}
                             <div className="kbd-row">
-                                {['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'].map(num => (
-                                    <button
-                                        key={num}
-                                        aria-label={`Number ${num}`}
-                                        className="kbd-key key-char"
-                                        onPointerDown={e => {
-                                            e.preventDefault();
-                                            vibrate(15);
-                                            this.sendChar(num);
-                                        }}
-                                    >
-                                        {num}
-                                    </button>
-                                ))}
+                                {SYMBOLS_NUM_ROW.map(keyDef => this.renderKey(keyDef))}
                             </div>
 
-                            {/* Row 2: Non-duplicate symbols + = [ ] { } < > \ | */}
+                            {/* Row 2: Non-duplicate symbols + = [ ] { } < > and \ (F11), | (F12) */}
                             <div className="kbd-row">
-                                {['+', '=', '[', ']', '{', '}', '<', '>', '\\', '|'].map(sym => (
-                                    <button
-                                        key={sym}
-                                        aria-label={`Symbol ${sym}`}
-                                        className="kbd-key key-char"
-                                        onPointerDown={e => {
-                                            e.preventDefault();
-                                            vibrate(15);
-                                            this.sendChar(sym);
-                                        }}
-                                    >
-                                        {sym}
-                                    </button>
-                                ))}
+                                {SYMBOLS_ROW_2.map(item => {
+                                    if (typeof item === 'string') {
+                                        return (
+                                            <button
+                                                key={item}
+                                                aria-label={`Symbol ${item}`}
+                                                className="kbd-key key-char"
+                                                onPointerDown={e => {
+                                                    e.preventDefault();
+                                                    vibrate(15);
+                                                    this.sendChar(item);
+                                                }}
+                                            >
+                                                {item}
+                                            </button>
+                                        );
+                                    }
+                                    return this.renderKey(item);
+                                })}
                             </div>
 
-                            {/* Row 3: Remaining symbols & terminal keys: $ ^ " ` Esc Home End PgUp PgDn Del */}
-                            <div className="kbd-row">
+                            {/* Row 3: Remaining symbols & wide Navigation keys: $ ^ " ` and Home End PgUp PgDn */}
+                            <div className="kbd-row kbd-row-symbols-3">
                                 {['$', '^', '"', '`'].map(sym => (
                                     <button
                                         key={sym}
                                         aria-label={`Symbol ${sym}`}
-                                        className="kbd-key key-char"
+                                        className="kbd-key key-char key-symbol"
                                         onPointerDown={e => {
                                             e.preventDefault();
                                             vibrate(15);
@@ -750,46 +785,32 @@ export class Keyboard extends Component<Props, State> {
                                     </button>
                                 ))}
                                 <button
-                                    aria-label="Escape"
-                                    className="kbd-key key-fn"
-                                    onPointerDown={e => this.handleSpecial('ESC', e)}
-                                >
-                                    ESC
-                                </button>
-                                <button
                                     aria-label="Home"
-                                    className="kbd-key key-fn"
+                                    className="kbd-key key-fn key-nav"
                                     onPointerDown={e => this.handleSpecial('HOME', e)}
                                 >
                                     Home
                                 </button>
                                 <button
                                     aria-label="End"
-                                    className="kbd-key key-fn"
+                                    className="kbd-key key-fn key-nav"
                                     onPointerDown={e => this.handleSpecial('END', e)}
                                 >
                                     End
                                 </button>
                                 <button
                                     aria-label="Page Up"
-                                    className="kbd-key key-fn"
+                                    className="kbd-key key-fn key-nav"
                                     onPointerDown={e => this.handleSpecial('PGUP', e)}
                                 >
                                     PgUp
                                 </button>
                                 <button
                                     aria-label="Page Down"
-                                    className="kbd-key key-fn"
+                                    className="kbd-key key-fn key-nav"
                                     onPointerDown={e => this.handleSpecial('PGDN', e)}
                                 >
                                     PgDn
-                                </button>
-                                <button
-                                    aria-label="Delete"
-                                    className="kbd-key key-fn"
-                                    onPointerDown={e => this.handleSpecial('DEL', e)}
-                                >
-                                    Del
                                 </button>
                             </div>
 
@@ -842,7 +863,7 @@ export class Keyboard extends Component<Props, State> {
                                 </button>
                             </div>
 
-                            {/* Row 5: Hide ABC Space Ctrl Enter */}
+                            {/* Row 5: Hide ABC Space Del Enter (no Ctrl, no ESC) */}
                             <div className="kbd-row">
                                 <button
                                     aria-label="Hide keyboard"
@@ -866,11 +887,11 @@ export class Keyboard extends Component<Props, State> {
                                     <span className="key-space-bar" />
                                 </button>
                                 <button
-                                    aria-label="Control"
-                                    className={`kbd-key key-fn key-ctrl ${ctrlActive ? 'active' : ''}`}
-                                    onPointerDown={e => this.handleSpecial('CTRL', e)}
+                                    aria-label="Delete"
+                                    className="kbd-key key-fn key-del"
+                                    onPointerDown={e => this.handleSpecial('DEL', e)}
                                 >
-                                    Ctrl
+                                    Del
                                 </button>
                                 <button
                                     aria-label="Enter"
