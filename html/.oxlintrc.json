@@ -1,0 +1,6 @@
+{
+  "rules": {
+    "typescript/no-duplicate-enum-values": "off",
+    "no-unused-vars": "off"
+  }
+}

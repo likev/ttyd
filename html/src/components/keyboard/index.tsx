@@ -1,6 +1,6 @@
 import { h, Component } from 'preact';
 import { bind } from 'decko';
-import './keyboard.scss';
+import './keyboard.css';
 
 interface Props {
     nativeKeyboardActive: boolean;
