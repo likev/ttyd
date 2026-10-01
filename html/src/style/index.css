@@ -11,6 +11,7 @@ body {
   -webkit-overflow-scrolling: touch;
   position: fixed;
   width: 100%;
+  background-color: #000000;
 }
 
 #terminal-container {
@@ -19,6 +20,7 @@ body {
   margin: 0 auto;
   padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) 0 env(safe-area-inset-left, 0);
   box-sizing: border-box;
+  background-color: #000000;
 
   .terminal {
     padding: 5px;
