@@ -187,10 +187,12 @@ export class Keyboard extends Component<Props, State> {
 
     componentDidMount() {
         window.addEventListener('contextmenu', this.preventContextMenu, { capture: true });
+        document.addEventListener('contextmenu', this.preventContextMenu, { capture: true });
     }
 
     componentWillUnmount() {
         window.removeEventListener('contextmenu', this.preventContextMenu, { capture: true });
+        document.removeEventListener('contextmenu', this.preventContextMenu, { capture: true });
         this.clearBackspaceTimers();
         for (const ptr of this.activePointers.values()) {
             if (ptr.longPressTimer !== null) {
@@ -202,9 +204,22 @@ export class Keyboard extends Component<Props, State> {
 
     @bind
     private preventContextMenu(e: Event) {
-        if (this.containerRef && (this.containerRef === e.target || this.containerRef.contains(e.target as Node))) {
-            e.preventDefault();
-            e.stopPropagation();
+        e.preventDefault();
+        e.stopPropagation();
+        if (window.getSelection) {
+            window.getSelection()?.removeAllRanges();
+        }
+        return false;
+    }
+
+    @bind
+    private handleContainerTouchStart(e: TouchEvent) {
+        e.stopPropagation();
+        if (document.activeElement && document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+        }
+        if (window.getSelection) {
+            window.getSelection()?.removeAllRanges();
         }
     }
 
@@ -344,6 +359,13 @@ export class Keyboard extends Component<Props, State> {
     private handleLetterPointerDown(e: PointerEvent, keyDef: KeyDef) {
         e.preventDefault();
         vibrate(15);
+
+        if (document.activeElement && document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+        }
+        if (window.getSelection) {
+            window.getSelection()?.removeAllRanges();
+        }
 
         const pointerId = e.pointerId;
         const target = e.currentTarget as HTMLElement;
@@ -617,6 +639,9 @@ export class Keyboard extends Component<Props, State> {
                 ref={c => (this.containerRef = c as HTMLDivElement)}
                 onContextMenu={this.preventContextMenu}
                 onSelectStart={e => e.preventDefault()}
+                onTouchStart={this.handleContainerTouchStart}
+                onTouchMove={e => e.stopPropagation()}
+                onTouchEnd={e => e.stopPropagation()}
             >
                 {activePopup && (
                     <div

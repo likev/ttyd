@@ -71,6 +71,11 @@ export class Terminal extends Component<Props, State> {
             let initialPinchDist = 0;
 
             const onTouchStart = (e: TouchEvent) => {
+                const target = e.target as HTMLElement;
+                if (target?.closest?.('.virtual-keyboard-container, .floating-keyboard-btn, .key-popup')) {
+                    return;
+                }
+
                 if (e.touches.length === 2) {
                     if (longPressTimer !== null) {
                         clearTimeout(longPressTimer);
@@ -87,29 +92,36 @@ export class Terminal extends Component<Props, State> {
                     touchStartX = e.touches[0].clientX;
                     touchStartY = e.touches[0].clientY;
 
-                    // Tap to focus helper textarea without auto-showing virtual keyboard
-                    if (textarea && document.activeElement !== textarea) {
+                    // Tap to focus helper textarea without auto-showing virtual keyboard (only when virtual keyboard is not open)
+                    if (!this.state.showKeyboard && textarea && document.activeElement !== textarea) {
                         textarea.focus();
                     }
 
-                    // Long press paste
-                    longPressTimer = window.setTimeout(async () => {
-                        longPressTimer = null;
-                        if (navigator.clipboard && navigator.clipboard.readText) {
-                            try {
-                                const text = await navigator.clipboard.readText();
-                                if (text) {
-                                    this.xterm.sendData(text);
+                    // Long press paste (only when virtual keyboard is not open)
+                    if (!this.state.showKeyboard) {
+                        longPressTimer = window.setTimeout(async () => {
+                            longPressTimer = null;
+                            if (navigator.clipboard && navigator.clipboard.readText) {
+                                try {
+                                    const text = await navigator.clipboard.readText();
+                                    if (text) {
+                                        this.xterm.sendData(text);
+                                    }
+                                } catch (err) {
+                                    // Clipboard access permission denied or unavailable
                                 }
-                            } catch (err) {
-                                // Clipboard access permission denied or unavailable
                             }
-                        }
-                    }, 600);
+                        }, 600);
+                    }
                 }
             };
 
             const onTouchMove = (e: TouchEvent) => {
+                const target = e.target as HTMLElement;
+                if (target?.closest?.('.virtual-keyboard-container, .floating-keyboard-btn, .key-popup')) {
+                    return;
+                }
+
                 if (e.touches.length === 2 && initialPinchDist > 0) {
                     const currentDist = Math.hypot(
                         e.touches[0].clientX - e.touches[1].clientX,
@@ -202,7 +214,6 @@ export class Terminal extends Component<Props, State> {
         if (textarea) {
             textarea.setAttribute('inputmode', 'none');
             textarea.blur();
-            textarea.focus();
         }
         this.setState({ showKeyboard: true }, () => {
             this.xterm.fit();
