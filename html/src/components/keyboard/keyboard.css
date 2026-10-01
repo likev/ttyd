@@ -49,7 +49,8 @@
 }
 
 .layout-symbols {
-  --kbd-arrow-size: 40px;
+  --kbd-arrow-width: 52px;
+  --kbd-arrow-height: 40px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -65,16 +66,15 @@
   font-size: 15px;
 }
 
-/* Arrow keys (UP, DOWN, LEFT, RIGHT): identical width and height */
+/* Arrow keys (UP, DOWN, LEFT, RIGHT): identical width (1.3x) and height */
 .layout-symbols .key-arrow {
-  flex: 0 0 var(--kbd-arrow-size) !important;
-  width: var(--kbd-arrow-size) !important;
-  height: var(--kbd-arrow-size) !important;
-  min-width: var(--kbd-arrow-size) !important;
-  max-width: var(--kbd-arrow-size) !important;
-  min-height: var(--kbd-arrow-size) !important;
-  max-height: var(--kbd-arrow-size) !important;
-  aspect-ratio: 1;
+  flex: 0 0 var(--kbd-arrow-width) !important;
+  width: var(--kbd-arrow-width) !important;
+  height: var(--kbd-arrow-height) !important;
+  min-width: var(--kbd-arrow-width) !important;
+  max-width: var(--kbd-arrow-width) !important;
+  min-height: var(--kbd-arrow-height) !important;
+  max-height: var(--kbd-arrow-height) !important;
   font-size: 20px;
   font-weight: bold;
   background: #323234;
@@ -87,19 +87,19 @@
   background: #48484a !important;
 }
 
-/* Row 4: Tab, Backspace, End, PgDn */
+/* Row 4: Tab, Backspace, End, PgDn (decreased nav widths to accommodate 1.3x arrows) */
 .layout-symbols .kbd-row-arrows .key-tab {
-  flex: 1.1;
+  flex: 1;
   height: 40px;
 }
 
 .layout-symbols .kbd-row-arrows .key-backspace {
-  flex: 1.3;
+  flex: 1.2;
   height: 40px;
 }
 
 .layout-symbols .kbd-row-arrows .key-nav {
-  flex: 1.6;
+  flex: 1.25;
   height: 40px;
   font-size: 14px;
   font-weight: 600;
@@ -112,15 +112,15 @@
   background: #48484a !important;
 }
 
-/* Row 3: Symbols & Navigation (Home, PgUp) */
+/* Row 3: Symbols & Navigation (Home, PgUp - decreased width to accommodate 1.3x Up arrow) */
 .layout-symbols .kbd-row-symbols-3 .key-symbol {
-  flex: 0.9;
+  flex: 0.85;
   height: 40px;
   font-size: 16px;
 }
 
 .layout-symbols .kbd-row-symbols-3 .key-nav {
-  flex: 1.6;
+  flex: 1.15;
   height: 40px;
   font-size: 14px;
   font-weight: 600;
@@ -133,14 +133,14 @@
   background: #48484a !important;
 }
 
-/* Row 5: Space, Del, Shift */
+/* Row 5: Space, Del, Shift (decreased space width to accommodate 1.3x Down arrow) */
 .layout-symbols .key-space {
-  flex: 2.3;
+  flex: 1.8;
   height: 40px;
 }
 
 .layout-symbols .key-del {
-  flex: 1.2;
+  flex: 1.1;
   height: 40px;
   font-size: 14px;
   font-weight: 600;
@@ -374,7 +374,8 @@
   }
 
   .layout-symbols {
-    --kbd-arrow-size: 30px;
+    --kbd-arrow-width: 39px;
+    --kbd-arrow-height: 30px;
   }
 
   .kbd-row {
