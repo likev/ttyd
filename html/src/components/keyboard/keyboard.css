@@ -133,9 +133,9 @@
   background: #48484a !important;
 }
 
-/* Row 5: Space, Del, Shift (decreased space width to accommodate 1.3x Down arrow) */
+/* Row 5: Space, Del, Shift (increased shift width, decreased space width) */
 .layout-symbols .key-space {
-  flex: 1.8;
+  flex: 1.3;
   height: 40px;
 }
 
@@ -154,9 +154,9 @@
 }
 
 .layout-symbols .key-shift {
-  flex: 1.1;
+  flex: 1.6;
   height: 40px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   background: #3a3a3c;
   color: #e2e8f0;

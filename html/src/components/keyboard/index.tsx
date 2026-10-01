@@ -851,9 +851,9 @@ export class Keyboard extends Component<Props, State> {
                                 })}
                             </div>
 
-                            {/* Row 3: Remaining symbols & Navigation keys: $ ^ " ` and ▲ Home PgUp */}
+                            {/* Row 3: Symbols & Navigation keys: $ ^ ▲ " ` Home PgUp */}
                             <div className="kbd-row kbd-row-symbols-3">
-                                {['$', '^', '"', '`'].map(sym => (
+                                {['$', '^'].map(sym => (
                                     <button
                                         key={sym}
                                         aria-label={`Symbol ${sym}`}
@@ -874,6 +874,20 @@ export class Keyboard extends Component<Props, State> {
                                 >
                                     ▲
                                 </button>
+                                {['"', '`'].map(sym => (
+                                    <button
+                                        key={sym}
+                                        aria-label={`Symbol ${sym}`}
+                                        className="kbd-key key-char key-symbol"
+                                        onPointerDown={e => {
+                                            e.preventDefault();
+                                            vibrate(15);
+                                            this.sendChar(sym);
+                                        }}
+                                    >
+                                        {sym}
+                                    </button>
+                                ))}
                                 <button
                                     aria-label="Home"
                                     className="kbd-key key-fn key-nav key-home"
@@ -939,7 +953,7 @@ export class Keyboard extends Component<Props, State> {
                                 </button>
                             </div>
 
-                            {/* Row 5: Hide ABC Shift ▼ Space Del Enter */}
+                            {/* Row 5: Hide ABC ▼ Shift Space Del Enter */}
                             <div className="kbd-row">
                                 <button
                                     aria-label="Hide keyboard"
@@ -956,18 +970,18 @@ export class Keyboard extends Component<Props, State> {
                                     ABC
                                 </button>
                                 <button
-                                    aria-label="Shift"
-                                    className={`kbd-key key-fn key-shift ${shiftActive ? 'active' : ''}`}
-                                    onPointerDown={e => this.handleSpecial('SHIFT', e)}
-                                >
-                                    Shift
-                                </button>
-                                <button
                                     aria-label="Down arrow"
                                     className="kbd-key key-arrow key-down"
                                     onPointerDown={e => this.handleSpecial('DOWN', e)}
                                 >
                                     ▼
+                                </button>
+                                <button
+                                    aria-label="Shift"
+                                    className={`kbd-key key-fn key-shift ${shiftActive ? 'active' : ''}`}
+                                    onPointerDown={e => this.handleSpecial('SHIFT', e)}
+                                >
+                                    Shift
                                 </button>
                                 <button
                                     aria-label="Space"
