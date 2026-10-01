@@ -71,6 +71,14 @@ const SYMBOLS_ROW_2: (string | KeyDef)[] = [
     { key: '|', fnLabel: 'F12', fnSeq: '\x1b[24~' },
 ];
 
+const SHIFT_MAP: Record<string, string> = {
+    '1': '!', '2': '@', '3': '#', '4': '$', '5': '%',
+    '6': '^', '7': '&', '8': '*', '9': '(', '0': ')',
+    '`': '~', '-': '_', '=': '+', '[': '{', ']': '}',
+    '\\': '|', ';': ':', "'": '"', ',': '<', '.': '>',
+    '/': '?',
+};
+
 function vibrate(duration = 15) {
     if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
         try {
@@ -163,6 +171,7 @@ interface ActivePointer {
 interface State {
     mode: 'qwerty' | 'symbols';
     ctrlActive: boolean;
+    shiftActive: boolean;
     activePopup: PopupState | null;
     pressedKeys: Record<string, boolean>;
 }
@@ -180,6 +189,7 @@ export class Keyboard extends Component<Props, State> {
         this.state = {
             mode: 'qwerty',
             ctrlActive: false,
+            shiftActive: false,
             activePopup: null,
             pressedKeys: {},
         };
@@ -231,25 +241,35 @@ export class Keyboard extends Component<Props, State> {
 
     @bind
     private sendChar(char: string) {
-        const { ctrlActive } = this.state;
+        const { ctrlActive, shiftActive } = this.state;
         let data = char;
+
+        if (shiftActive) {
+            if (SHIFT_MAP[char]) {
+                data = SHIFT_MAP[char];
+            } else {
+                data = char.toUpperCase();
+            }
+            this.updateKeyboardState({ shiftActive: false });
+        }
+
         if (ctrlActive) {
-            const charCode = char.toLowerCase().charCodeAt(0);
+            const charCode = data.toLowerCase().charCodeAt(0);
             if (charCode >= 97 && charCode <= 122) {
                 data = String.fromCharCode(charCode - 96);
-            } else if (char === ' ' || char === '@') {
+            } else if (data === ' ' || data === '@') {
                 data = '\x00';
-            } else if (char === '[') {
+            } else if (data === '[') {
                 data = '\x1b';
-            } else if (char === '\\') {
+            } else if (data === '\\') {
                 data = '\x1c';
-            } else if (char === ']') {
+            } else if (data === ']') {
                 data = '\x1d';
-            } else if (char === '^') {
+            } else if (data === '^') {
                 data = '\x1e';
-            } else if (char === '_') {
+            } else if (data === '_') {
                 data = '\x1f';
-            } else if (char === '?') {
+            } else if (data === '?') {
                 data = '\x7f';
             }
             this.updateKeyboardState({ ctrlActive: false });
@@ -268,7 +288,7 @@ export class Keyboard extends Component<Props, State> {
 
         switch (action) {
             case 'ESC':
-                this.updateKeyboardState({ ctrlActive: false });
+                this.updateKeyboardState({ ctrlActive: false, shiftActive: false });
                 this.props.onKeyPress('\x1b');
                 break;
             case 'BACKSPACE':
@@ -283,39 +303,77 @@ export class Keyboard extends Component<Props, State> {
             case 'CTRL':
                 this.updateKeyboardState({ ctrlActive: !this.state.ctrlActive });
                 break;
+            case 'SHIFT':
+                this.updateKeyboardState({ shiftActive: !this.state.shiftActive });
+                break;
             case 'MODE_SYMBOLS':
                 this.activePopup = null;
                 this.pressedKeys = {};
-                this.updateKeyboardState({ mode: 'symbols', activePopup: null, pressedKeys: {} });
+                this.updateKeyboardState({ mode: 'symbols', activePopup: null, pressedKeys: {}, ctrlActive: false });
                 break;
             case 'MODE_QWERTY':
                 this.activePopup = null;
                 this.pressedKeys = {};
-                this.updateKeyboardState({ mode: 'qwerty', activePopup: null, pressedKeys: {} });
+                this.updateKeyboardState({ mode: 'qwerty', activePopup: null, pressedKeys: {}, ctrlActive: false });
                 break;
             case 'HIDE':
                 this.props.onClose();
                 break;
             case 'TAB':
-                this.props.onKeyPress('\t');
+                if (this.state.shiftActive) {
+                    this.updateKeyboardState({ shiftActive: false });
+                    this.props.onKeyPress('\x1b[Z');
+                } else {
+                    this.props.onKeyPress('\t');
+                }
                 break;
             case 'LEFT':
-                this.props.onKeyPress('\x1b[D');
+                if (this.state.shiftActive) {
+                    this.updateKeyboardState({ shiftActive: false });
+                    this.props.onKeyPress('\x1b[1;2D');
+                } else {
+                    this.props.onKeyPress('\x1b[D');
+                }
                 break;
             case 'UP':
-                this.props.onKeyPress('\x1b[A');
+                if (this.state.shiftActive) {
+                    this.updateKeyboardState({ shiftActive: false });
+                    this.props.onKeyPress('\x1b[1;2A');
+                } else {
+                    this.props.onKeyPress('\x1b[A');
+                }
                 break;
             case 'DOWN':
-                this.props.onKeyPress('\x1b[B');
+                if (this.state.shiftActive) {
+                    this.updateKeyboardState({ shiftActive: false });
+                    this.props.onKeyPress('\x1b[1;2B');
+                } else {
+                    this.props.onKeyPress('\x1b[B');
+                }
                 break;
             case 'RIGHT':
-                this.props.onKeyPress('\x1b[C');
+                if (this.state.shiftActive) {
+                    this.updateKeyboardState({ shiftActive: false });
+                    this.props.onKeyPress('\x1b[1;2C');
+                } else {
+                    this.props.onKeyPress('\x1b[C');
+                }
                 break;
             case 'HOME':
-                this.props.onKeyPress('\x1b[H');
+                if (this.state.shiftActive) {
+                    this.updateKeyboardState({ shiftActive: false });
+                    this.props.onKeyPress('\x1b[1;2H');
+                } else {
+                    this.props.onKeyPress('\x1b[H');
+                }
                 break;
             case 'END':
-                this.props.onKeyPress('\x1b[F');
+                if (this.state.shiftActive) {
+                    this.updateKeyboardState({ shiftActive: false });
+                    this.props.onKeyPress('\x1b[1;2F');
+                } else {
+                    this.props.onKeyPress('\x1b[F');
+                }
                 break;
             case 'PGUP':
                 this.props.onKeyPress('\x1b[5~');
@@ -631,7 +689,7 @@ export class Keyboard extends Component<Props, State> {
     }
 
     render() {
-        const { mode, ctrlActive, activePopup } = this.state;
+        const { mode, ctrlActive, shiftActive, activePopup } = this.state;
 
         return (
             <div
@@ -888,7 +946,7 @@ export class Keyboard extends Component<Props, State> {
                                 </button>
                             </div>
 
-                            {/* Row 5: Hide ABC Space Del Enter (no Ctrl, no ESC) */}
+                            {/* Row 5: Hide ABC Shift Space Del Enter (no Ctrl, no ESC) */}
                             <div className="kbd-row">
                                 <button
                                     aria-label="Hide keyboard"
@@ -903,6 +961,13 @@ export class Keyboard extends Component<Props, State> {
                                     onPointerDown={e => this.handleSpecial('MODE_QWERTY', e)}
                                 >
                                     ABC
+                                </button>
+                                <button
+                                    aria-label="Shift"
+                                    className={`kbd-key key-fn key-shift ${shiftActive ? 'active' : ''}`}
+                                    onPointerDown={e => this.handleSpecial('SHIFT', e)}
+                                >
+                                    Shift
                                 </button>
                                 <button
                                     aria-label="Space"
