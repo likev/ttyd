@@ -6,4 +6,9 @@ import { h, render } from 'preact';
 import { App } from './components/app';
 import './style/index.css';
 
-render(<App />, document.body);
+const init = () => render(<App />, document.body);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}

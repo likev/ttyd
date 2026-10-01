@@ -48,7 +48,7 @@ function singleHtmlPlugin(): Plugin {
       if (fs.existsSync(faviconPath)) {
         const faviconBase64 = fs.readFileSync(faviconPath).toString('base64');
         const faviconDataUri = `data:image/png;base64,${faviconBase64}`;
-        inlined = inlined.replace(/<link[^>]*rel=["']icon["'][^>]*>/i, `<link rel="icon" type="image/png" href="${faviconDataUri}">`);
+        inlined = inlined.replace(/<link[^>]*rel=["']icon["'][^>]*>/i, () => `<link rel="icon" type="image/png" href="${faviconDataUri}">`);
       }
 
       // Inline CSS
@@ -57,9 +57,9 @@ function singleHtmlPlugin(): Plugin {
           const cssContent = chunk.source.toString();
           const linkRegex = new RegExp(`<link[^>]*href=["'][^"']*${escapeRegExp(fileName)}["'][^>]*>`, 'gi');
           if (linkRegex.test(inlined)) {
-            inlined = inlined.replace(linkRegex, `<style>${cssContent}</style>`);
+            inlined = inlined.replace(linkRegex, () => `<style>${cssContent}</style>`);
           } else {
-            inlined = inlined.replace('</head>', `<style>${cssContent}</style></head>`);
+            inlined = inlined.replace('</head>', () => `<style>${cssContent}</style></head>`);
           }
           delete ctx.bundle[fileName];
         }
@@ -70,11 +70,8 @@ function singleHtmlPlugin(): Plugin {
         if (fileName.endsWith('.js') && 'code' in chunk) {
           const jsContent = chunk.code;
           const scriptRegex = new RegExp(`<script[^>]*src=["'][^"']*${escapeRegExp(fileName)}["'][^>]*>\\s*</script>`, 'gi');
-          if (scriptRegex.test(inlined)) {
-            inlined = inlined.replace(scriptRegex, `<script type="module">${jsContent}</script>`);
-          } else {
-            inlined = inlined.replace('</body>', `<script type="module">${jsContent}</script></body>`);
-          }
+          inlined = inlined.replace(scriptRegex, '');
+          inlined = inlined.replace('</body>', () => `<script type="module">${jsContent}</script></body>`);
           delete ctx.bundle[fileName];
         }
       }

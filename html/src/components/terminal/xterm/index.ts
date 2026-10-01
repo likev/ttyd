@@ -105,6 +105,8 @@ export class Xterm {
     private resizeOverlay = true;
     private reconnect = true;
     private doReconnect = true;
+    private reconnectTrigger?: () => void;
+    private reconnectDisposables: IDisposable[] = [];
 
     private writeFunc = (data: ArrayBuffer) => this.writeData(new Uint8Array(data));
 
@@ -114,6 +116,11 @@ export class Xterm {
     ) {}
 
     dispose() {
+        this.reconnectTrigger = undefined;
+        for (const d of this.reconnectDisposables) {
+            d.dispose();
+        }
+        this.reconnectDisposables.length = 0;
         for (const d of this.disposables) {
             d.dispose();
         }
@@ -258,7 +265,17 @@ export class Xterm {
     @bind
     public sendData(data: string | Uint8Array) {
         const { socket, textEncoder } = this;
-        if (socket?.readyState !== WebSocket.OPEN) return;
+        if (socket?.readyState !== WebSocket.OPEN) {
+            if (this.reconnectTrigger) {
+                const isEnter =
+                    (typeof data === 'string' && (data === '\r' || data === '\n')) ||
+                    (data instanceof Uint8Array && (data[0] === 13 || data[0] === 10));
+                if (isEnter) {
+                    this.reconnectTrigger();
+                }
+            }
+            return;
+        }
 
         if (typeof data === 'string') {
             const payload = new Uint8Array(data.length * 3 + 1);
@@ -301,6 +318,7 @@ export class Xterm {
             this.opened = true;
         }
 
+        this.reconnectTrigger = undefined;
         this.doReconnect = this.reconnect;
         this.initListeners();
         terminal.focus();
@@ -320,14 +338,31 @@ export class Xterm {
             refreshToken().then(connect);
         } else {
             const { terminal } = this;
-            const keyDispose = terminal.onKey(e => {
-                const event = e.domEvent;
-                if (event.key === 'Enter') {
-                    keyDispose.dispose();
-                    overlayAddon.showOverlay('Reconnecting...');
-                    refreshToken().then(connect);
+            const triggerReconnect = () => {
+                if (!this.reconnectTrigger) return;
+                this.reconnectTrigger = undefined;
+                for (const d of this.reconnectDisposables) {
+                    d.dispose();
                 }
-            });
+                this.reconnectDisposables.length = 0;
+                overlayAddon.showOverlay('Reconnecting...');
+                refreshToken().then(connect);
+            };
+            this.reconnectTrigger = triggerReconnect;
+
+            this.reconnectDisposables.push(
+                terminal.onKey(e => {
+                    const domEvent = e.domEvent;
+                    if (domEvent.key === 'Enter') {
+                        triggerReconnect();
+                    }
+                }),
+                terminal.onData(data => {
+                    if (data === '\r' || data === '\n') {
+                        triggerReconnect();
+                    }
+                })
+            );
             overlayAddon.showOverlay('Press ⏎ to Reconnect');
         }
     }
