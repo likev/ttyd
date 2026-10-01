@@ -49,6 +49,7 @@
 }
 
 .layout-symbols {
+  --kbd-arrow-size: 40px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -60,66 +61,62 @@
 }
 
 .layout-symbols .kbd-key {
-  height: 38px;
+  height: 40px;
   font-size: 15px;
 }
 
-.layout-symbols .kbd-row-arrows .key-arrow {
-  flex: 2.3;
-  height: 42px;
-  font-size: 24px;
+/* Arrow keys (UP, DOWN, LEFT, RIGHT): identical width and height */
+.layout-symbols .key-arrow {
+  flex: 0 0 var(--kbd-arrow-size) !important;
+  width: var(--kbd-arrow-size) !important;
+  height: var(--kbd-arrow-size) !important;
+  min-width: var(--kbd-arrow-size) !important;
+  max-width: var(--kbd-arrow-size) !important;
+  min-height: var(--kbd-arrow-size) !important;
+  max-height: var(--kbd-arrow-size) !important;
+  aspect-ratio: 1;
+  font-size: 20px;
   font-weight: bold;
   background: #323234;
   color: #9ae6b4;
+  box-sizing: border-box;
 }
 
-.layout-symbols .kbd-row-arrows .key-arrow:active,
-.layout-symbols .kbd-row-arrows .key-arrow.pressed {
+.layout-symbols .key-arrow:active,
+.layout-symbols .key-arrow.pressed {
   background: #48484a !important;
 }
 
+/* Row 4: Tab, Backspace, End, PgDn */
 .layout-symbols .kbd-row-arrows .key-tab {
-  flex: 1.3;
-  height: 42px;
+  flex: 1.1;
+  height: 40px;
 }
 
 .layout-symbols .kbd-row-arrows .key-backspace {
-  flex: 1.8;
-  height: 42px;
+  flex: 1.3;
+  height: 40px;
 }
 
-.layout-symbols .kbd-row-arrows .key-pgdn {
-  flex: 2.1;
-  height: 42px;
+.layout-symbols .kbd-row-arrows .key-nav {
+  flex: 1.6;
+  height: 40px;
   font-size: 14px;
   font-weight: 600;
   background: #3a3a3c;
   color: #e2e8f0;
 }
 
-.layout-symbols .kbd-row-arrows .key-pgdn:active,
-.layout-symbols .kbd-row-arrows .key-pgdn.pressed {
+.layout-symbols .kbd-row-arrows .key-nav:active,
+.layout-symbols .kbd-row-arrows .key-nav.pressed {
   background: #48484a !important;
 }
 
+/* Row 3: Symbols & Navigation (Home, PgUp) */
 .layout-symbols .kbd-row-symbols-3 .key-symbol {
   flex: 0.9;
   height: 40px;
   font-size: 16px;
-}
-
-.layout-symbols .kbd-row-symbols-3 .key-arrow {
-  flex: 1.5;
-  height: 40px;
-  font-size: 20px;
-  font-weight: bold;
-  background: #323234;
-  color: #9ae6b4;
-}
-
-.layout-symbols .kbd-row-symbols-3 .key-arrow:active,
-.layout-symbols .kbd-row-symbols-3 .key-arrow.pressed {
-  background: #48484a !important;
 }
 
 .layout-symbols .kbd-row-symbols-3 .key-nav {
@@ -136,27 +133,15 @@
   background: #48484a !important;
 }
 
-.layout-symbols .key-down-arrow {
-  flex: 1.5;
-  height: 38px;
-  font-size: 20px;
-  font-weight: bold;
-  background: #323234;
-  color: #9ae6b4;
-}
-
-.layout-symbols .key-down-arrow:active,
-.layout-symbols .key-down-arrow.pressed {
-  background: #48484a !important;
-}
-
+/* Row 5: Space, Del, Shift */
 .layout-symbols .key-space {
-  flex: 2.5;
+  flex: 2.3;
+  height: 40px;
 }
 
 .layout-symbols .key-del {
   flex: 1.2;
-  height: 38px;
+  height: 40px;
   font-size: 14px;
   font-weight: 600;
   background: #3a3a3c;
@@ -169,8 +154,8 @@
 }
 
 .layout-symbols .key-shift {
-  flex: 1.2;
-  height: 38px;
+  flex: 1.1;
+  height: 40px;
   font-size: 13px;
   font-weight: 600;
   background: #3a3a3c;
@@ -388,20 +373,23 @@
     gap: 3px;
   }
 
+  .layout-symbols {
+    --kbd-arrow-size: 30px;
+  }
+
   .kbd-row {
     gap: 3px;
   }
 
-  .layout-symbols .kbd-row-arrows .key-arrow,
+  .layout-symbols .kbd-key,
   .layout-symbols .kbd-row-arrows .key-tab,
   .layout-symbols .kbd-row-arrows .key-backspace,
-  .layout-symbols .kbd-row-arrows .key-pgdn,
+  .layout-symbols .kbd-row-arrows .key-nav,
   .layout-symbols .kbd-row-symbols-3 .key-symbol,
-  .layout-symbols .kbd-row-symbols-3 .key-arrow,
   .layout-symbols .kbd-row-symbols-3 .key-nav,
-  .layout-symbols .key-down-arrow,
   .layout-symbols .key-del,
-  .layout-symbols .key-shift {
+  .layout-symbols .key-shift,
+  .layout-symbols .key-space {
     height: 30px;
     font-size: 13px;
   }

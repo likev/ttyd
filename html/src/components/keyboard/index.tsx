@@ -851,7 +851,7 @@ export class Keyboard extends Component<Props, State> {
                                 })}
                             </div>
 
-                            {/* Row 3: Remaining symbols & wide Navigation keys: $ ^ " ` and ▲ Home End PgUp */}
+                            {/* Row 3: Remaining symbols & Navigation keys: $ ^ " ` and ▲ Home PgUp */}
                             <div className="kbd-row kbd-row-symbols-3">
                                 {['$', '^', '"', '`'].map(sym => (
                                     <button
@@ -876,28 +876,21 @@ export class Keyboard extends Component<Props, State> {
                                 </button>
                                 <button
                                     aria-label="Home"
-                                    className="kbd-key key-fn key-nav"
+                                    className="kbd-key key-fn key-nav key-home"
                                     onPointerDown={e => this.handleSpecial('HOME', e)}
                                 >
                                     Home
                                 </button>
                                 <button
-                                    aria-label="End"
-                                    className="kbd-key key-fn key-nav"
-                                    onPointerDown={e => this.handleSpecial('END', e)}
-                                >
-                                    End
-                                </button>
-                                <button
                                     aria-label="Page Up"
-                                    className="kbd-key key-fn key-nav"
+                                    className="kbd-key key-fn key-nav key-pgup"
                                     onPointerDown={e => this.handleSpecial('PGUP', e)}
                                 >
                                     PgUp
                                 </button>
                             </div>
 
-                            {/* Row 4: Wide Navigation & Arrow keys: Tab ◀ ▶ Backspace PgDn */}
+                            {/* Row 4: Wide Navigation & Arrow keys: Tab ◀ ▶ Backspace End PgDn */}
                             <div className="kbd-row kbd-row-arrows">
                                 <button
                                     aria-label="Tab"
@@ -908,14 +901,14 @@ export class Keyboard extends Component<Props, State> {
                                 </button>
                                 <button
                                     aria-label="Left arrow"
-                                    className="kbd-key key-arrow"
+                                    className="kbd-key key-arrow key-left"
                                     onPointerDown={e => this.handleSpecial('LEFT', e)}
                                 >
                                     ◀
                                 </button>
                                 <button
                                     aria-label="Right arrow"
-                                    className="kbd-key key-arrow"
+                                    className="kbd-key key-arrow key-right"
                                     onPointerDown={e => this.handleSpecial('RIGHT', e)}
                                 >
                                     ▶
@@ -929,6 +922,13 @@ export class Keyboard extends Component<Props, State> {
                                     onPointerCancel={this.clearBackspaceTimers}
                                 >
                                     <BackspaceIcon />
+                                </button>
+                                <button
+                                    aria-label="End"
+                                    className="kbd-key key-fn key-nav key-end"
+                                    onPointerDown={e => this.handleSpecial('END', e)}
+                                >
+                                    End
                                 </button>
                                 <button
                                     aria-label="Page Down"
@@ -964,7 +964,7 @@ export class Keyboard extends Component<Props, State> {
                                 </button>
                                 <button
                                     aria-label="Down arrow"
-                                    className="kbd-key key-arrow key-down-arrow"
+                                    className="kbd-key key-arrow key-down"
                                     onPointerDown={e => this.handleSpecial('DOWN', e)}
                                 >
                                     ▼
