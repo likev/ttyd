@@ -851,7 +851,7 @@ export class Keyboard extends Component<Props, State> {
                                 })}
                             </div>
 
-                            {/* Row 3: Remaining symbols & wide Navigation keys: $ ^ " ` and Home End PgUp PgDn */}
+                            {/* Row 3: Remaining symbols & wide Navigation keys: $ ^ " ` and ▲ Home End PgUp */}
                             <div className="kbd-row kbd-row-symbols-3">
                                 {['$', '^', '"', '`'].map(sym => (
                                     <button
@@ -867,6 +867,13 @@ export class Keyboard extends Component<Props, State> {
                                         {sym}
                                     </button>
                                 ))}
+                                <button
+                                    aria-label="Up arrow"
+                                    className="kbd-key key-arrow key-up"
+                                    onPointerDown={e => this.handleSpecial('UP', e)}
+                                >
+                                    ▲
+                                </button>
                                 <button
                                     aria-label="Home"
                                     className="kbd-key key-fn key-nav"
@@ -888,16 +895,9 @@ export class Keyboard extends Component<Props, State> {
                                 >
                                     PgUp
                                 </button>
-                                <button
-                                    aria-label="Page Down"
-                                    className="kbd-key key-fn key-nav"
-                                    onPointerDown={e => this.handleSpecial('PGDN', e)}
-                                >
-                                    PgDn
-                                </button>
                             </div>
 
-                            {/* Row 4: Giant Arrow keys with Tab & Backspace */}
+                            {/* Row 4: Wide Navigation & Arrow keys: Tab ◀ ▶ Backspace PgDn */}
                             <div className="kbd-row kbd-row-arrows">
                                 <button
                                     aria-label="Tab"
@@ -912,20 +912,6 @@ export class Keyboard extends Component<Props, State> {
                                     onPointerDown={e => this.handleSpecial('LEFT', e)}
                                 >
                                     ◀
-                                </button>
-                                <button
-                                    aria-label="Up arrow"
-                                    className="kbd-key key-arrow"
-                                    onPointerDown={e => this.handleSpecial('UP', e)}
-                                >
-                                    ▲
-                                </button>
-                                <button
-                                    aria-label="Down arrow"
-                                    className="kbd-key key-arrow"
-                                    onPointerDown={e => this.handleSpecial('DOWN', e)}
-                                >
-                                    ▼
                                 </button>
                                 <button
                                     aria-label="Right arrow"
@@ -944,9 +930,16 @@ export class Keyboard extends Component<Props, State> {
                                 >
                                     <BackspaceIcon />
                                 </button>
+                                <button
+                                    aria-label="Page Down"
+                                    className="kbd-key key-fn key-nav key-pgdn"
+                                    onPointerDown={e => this.handleSpecial('PGDN', e)}
+                                >
+                                    PgDn
+                                </button>
                             </div>
 
-                            {/* Row 5: Hide ABC Shift Space Del Enter (no Ctrl, no ESC) */}
+                            {/* Row 5: Hide ABC Shift ▼ Space Del Enter */}
                             <div className="kbd-row">
                                 <button
                                     aria-label="Hide keyboard"
@@ -968,6 +961,13 @@ export class Keyboard extends Component<Props, State> {
                                     onPointerDown={e => this.handleSpecial('SHIFT', e)}
                                 >
                                     Shift
+                                </button>
+                                <button
+                                    aria-label="Down arrow"
+                                    className="kbd-key key-arrow key-down-arrow"
+                                    onPointerDown={e => this.handleSpecial('DOWN', e)}
+                                >
+                                    ▼
                                 </button>
                                 <button
                                     aria-label="Space"
