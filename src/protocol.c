@@ -348,7 +348,7 @@ int callback_tty(struct lws *wsi, enum lws_callback_reasons reason, void *user, 
             }
             if (!pss->authenticated) {
               if (server->rate_limit && token_presented && server->auth_header == NULL) {
-                char rip[50];
+                char rip[50] = "";
                 lws_get_peer_simple(lws_get_network_wsi(wsi), rip, sizeof(rip));
                 add_failed_attempt(rip);
               }

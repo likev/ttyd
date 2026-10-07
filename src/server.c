@@ -162,9 +162,14 @@ static void print_config() {
 
 #define MAX_FAILED_ATTEMPTS 1000
 
+static bool is_loopback(const char *ip) {
+  if (ip == NULL || ip[0] == '\0') return false;
+  return strncmp(ip, "127.", 4) == 0 || strcmp(ip, "::1") == 0 || strncmp(ip, "::ffff:127.", 11) == 0;
+}
+
 void add_failed_attempt(const char *ip) {
   if (ip == NULL || ip[0] == '\0' || server->auth_header != NULL) return;
-  if (strcmp(ip, "127.0.0.1") == 0 || strcmp(ip, "::1") == 0) return;
+  if (is_loopback(ip)) return;
 
   // Prune list if it exceeds capacity
   int total = 0;
@@ -195,7 +200,7 @@ void add_failed_attempt(const char *ip) {
 }
 
 bool is_ip_blocked(const char *ip) {
-  if (ip == NULL || ip[0] == '\0') return false;
+  if (ip == NULL || ip[0] == '\0' || is_loopback(ip)) return false;
 
   time_t now = time(NULL);
   time_t cutoff = now - 300; // 5 minutes ago
