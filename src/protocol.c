@@ -181,8 +181,8 @@ static void wsi_output(struct lws *wsi, pty_buf_t *buf) {
 }
 
 static bool check_auth(struct lws *wsi, struct pss_tty *pss) {
-  char rip[50] = "";
   if (server->rate_limit && server->credential != NULL && server->auth_header == NULL) {
+    char rip[50] = "";
     lws_get_peer_simple(lws_get_network_wsi(wsi), rip, sizeof(rip));
     if (is_ip_blocked(rip)) {
       return false;
@@ -191,18 +191,6 @@ static bool check_auth(struct lws *wsi, struct pss_tty *pss) {
 
   if (server->auth_header != NULL) {
     return lws_hdr_custom_copy(wsi, pss->user, sizeof(pss->user), server->auth_header, strlen(server->auth_header)) > 0;
-  }
-
-  if (server->credential != NULL) {
-    char buf[256];
-    size_t n = lws_hdr_copy(wsi, buf, sizeof(buf), WSI_TOKEN_HTTP_AUTHORIZATION);
-    bool presented = n >= 7 && strstr(buf, "Basic ");
-    bool ok = presented && !strcmp(buf + 6, server->credential);
-    if (!ok && presented && server->rate_limit) {
-      if (rip[0] == '\0') lws_get_peer_simple(lws_get_network_wsi(wsi), rip, sizeof(rip));
-      add_failed_attempt(rip);
-    }
-    return ok;
   }
 
   return true;

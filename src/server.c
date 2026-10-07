@@ -164,6 +164,7 @@ static void print_config() {
 
 void add_failed_attempt(const char *ip) {
   if (ip == NULL || ip[0] == '\0' || server->auth_header != NULL) return;
+  if (strcmp(ip, "127.0.0.1") == 0 || strcmp(ip, "::1") == 0) return;
 
   // Prune list if it exceeds capacity
   int total = 0;
