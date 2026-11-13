@@ -1,6 +1,6 @@
 :root {
-  --kbd-total-height: 220px;
-  --kbd-collapsed-height: 54px;
+  --kbd-total-height: calc(218px + env(safe-area-inset-bottom, 0px));
+  --kbd-collapsed-height: calc(54px + env(safe-area-inset-bottom, 0px));
 }
 
 .virtual-keyboard-container {
@@ -41,144 +41,6 @@
   width: 100%;
 }
 
-.layout-qwerty {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-}
-
-.layout-symbols {
-  --kbd-arrow-width: 52px;
-  --kbd-arrow-height: 40px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  width: 100%;
-}
-
-.layout-symbols .kbd-row {
-  gap: 4px;
-}
-
-.layout-symbols .kbd-key {
-  height: 40px;
-  font-size: 15px;
-}
-
-/* Arrow keys (UP, DOWN, LEFT, RIGHT): identical width (1.3x) and height */
-.layout-symbols .key-arrow {
-  flex: 0 0 var(--kbd-arrow-width) !important;
-  width: var(--kbd-arrow-width) !important;
-  height: var(--kbd-arrow-height) !important;
-  min-width: var(--kbd-arrow-width) !important;
-  max-width: var(--kbd-arrow-width) !important;
-  min-height: var(--kbd-arrow-height) !important;
-  max-height: var(--kbd-arrow-height) !important;
-  font-size: 20px;
-  font-weight: bold;
-  background: #323234;
-  color: #9ae6b4;
-  box-sizing: border-box;
-}
-
-.layout-symbols .key-arrow:active,
-.layout-symbols .key-arrow.pressed {
-  background: #48484a !important;
-}
-
-/* Row 4: Tab, Backspace, End, PgDn (decreased nav widths to accommodate 1.3x arrows) */
-.layout-symbols .kbd-row-arrows .key-tab {
-  flex: 1;
-  height: 40px;
-}
-
-.layout-symbols .kbd-row-arrows .key-backspace {
-  flex: 1.2;
-  height: 40px;
-}
-
-.layout-symbols .kbd-row-arrows .key-nav {
-  flex: 1.25;
-  height: 40px;
-  font-size: 14px;
-  font-weight: 600;
-  background: #3a3a3c;
-  color: #e2e8f0;
-}
-
-.layout-symbols .kbd-row-arrows .key-nav:active,
-.layout-symbols .kbd-row-arrows .key-nav.pressed {
-  background: #48484a !important;
-}
-
-/* Row 3: Symbols & Navigation (Home, PgUp - decreased width to accommodate 1.3x Up arrow) */
-.layout-symbols .kbd-row-symbols-3 .key-symbol {
-  flex: 0.85;
-  height: 40px;
-  font-size: 16px;
-}
-
-.layout-symbols .kbd-row-symbols-3 .key-nav {
-  flex: 1.15;
-  height: 40px;
-  font-size: 14px;
-  font-weight: 600;
-  background: #3a3a3c;
-  color: #e2e8f0;
-}
-
-.layout-symbols .kbd-row-symbols-3 .key-nav:active,
-.layout-symbols .kbd-row-symbols-3 .key-nav.pressed {
-  background: #48484a !important;
-}
-
-/* Row 5: Space, Del, Shift (increased shift width, decreased space width) */
-.layout-symbols .key-space {
-  flex: 1.3;
-  height: 40px;
-}
-
-.layout-symbols .key-del {
-  flex: 1.1;
-  height: 40px;
-  font-size: 14px;
-  font-weight: 600;
-  background: #3a3a3c;
-  color: #e2e8f0;
-}
-
-.layout-symbols .key-del:active,
-.layout-symbols .key-del.pressed {
-  background: #48484a !important;
-}
-
-.layout-symbols .key-shift {
-  flex: 1.6;
-  height: 40px;
-  font-size: 14px;
-  font-weight: 600;
-  background: #3a3a3c;
-  color: #e2e8f0;
-}
-
-.layout-symbols .key-shift.active {
-  background: #007aff !important;
-  color: #ffffff !important;
-  box-shadow: 0 0 10px rgba(0, 122, 255, 0.5);
-}
-
-.layout-symbols .key-shift:active,
-.layout-symbols .key-shift.pressed {
-  background: #48484a !important;
-}
-
-/* Row 2 QWERTY has 9 keys, indented to match standard physical/builtin keyboard layout */
-.layout-qwerty .kbd-row:nth-child(2) {
-  padding: 0 4.5%;
-  box-sizing: border-box;
-}
-
 .kbd-row {
   display: flex;
   justify-content: center;
@@ -192,7 +54,7 @@
   justify-content: center;
   flex-direction: column;
   flex: 1;
-  height: 44px;
+  height: 46px;
   min-width: 0;
   background: #48484a;
   color: #ffffff;
@@ -230,43 +92,176 @@
   }
 
   &.key-hide {
-    flex: 1.2;
+    flex: 1.05;
   }
 
   &.key-mode {
-    flex: 1.2;
+    flex: 1.1;
     font-size: 14px;
     font-weight: 600;
   }
 
+  &.key-tab {
+    flex: 1.15;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  &.key-punct {
+    flex: 0.95;
+  }
+
   &.key-space {
-    flex: 3.4;
+    flex: 2.35;
     background: #48484a;
   }
 
-  &.key-ctrl {
-    flex: 1.2;
+  &.key-ctrl,
+  &.key-shift {
+    flex: 1.15;
     font-size: 13px;
     font-weight: 600;
 
     &.active {
       background: #007aff !important;
       color: #ffffff !important;
-      box-shadow: 0 0 10px rgba(0, 122, 255, 0.5);
+      box-shadow: 0 0 10px rgba(0, 122, 255, 0.45);
+    }
+
+    &.active.locked {
+      box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.85), 0 0 10px rgba(0, 122, 255, 0.6);
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: 3px;
+        width: 14px;
+        height: 2.5px;
+        border-radius: 2px;
+        background: #ffffff;
+      }
     }
   }
 
   &.key-enter {
-    flex: 1.4;
+    flex: 1.3;
     background: #323234;
     color: #ffffff;
   }
 
-  &.key-arrow {
+  &.key-nav {
     background: #3a3a3c;
-    color: #9ae6b4;
-    font-size: 15px;
+    color: #e2e8f0;
+    font-size: 13px;
+    font-weight: 600;
   }
+
+  &.key-arrow {
+    background: #2f3835;
+    color: #9ae6b4;
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  &.key-tmux {
+    background: #2b3a4a;
+    color: #90cdf4;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+}
+
+/* QWERTY Layout */
+.layout-qwerty {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.layout-qwerty .kbd-key {
+  height: 46px;
+}
+
+/* Row 2 QWERTY has 9 keys, indented to match standard physical/builtin keyboard layout */
+.layout-qwerty .kbd-row:nth-child(2) {
+  padding: 0 4.5%;
+  box-sizing: border-box;
+}
+
+/* Symbols & Navigation Layout (5 rows matching QWERTY total height) */
+.layout-symbols {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.layout-symbols .kbd-row {
+  gap: 4px;
+}
+
+.layout-symbols .kbd-key {
+  height: 37px;
+  font-size: 14px;
+}
+
+.layout-symbols .key-main-label {
+  font-size: 15px;
+  line-height: 17px;
+}
+
+/* 6-column x 2-row aligned Navigation & Tmux grid */
+.layout-symbols .kbd-row-nav .kbd-key {
+  flex: 1 1 0%;
+  min-width: 0;
+  height: 37px;
+}
+
+.layout-symbols .kbd-row-nav .key-arrow {
+  font-size: 18px;
+}
+
+.layout-symbols .kbd-row-nav .key-nav,
+.layout-symbols .kbd-row-nav .key-esc,
+.layout-symbols .kbd-row-nav .key-tab,
+.layout-symbols .kbd-row-nav .key-tmux {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Row 5 bottom bar in 123 mode */
+.layout-symbols .kbd-row-bottom .key-hide {
+  flex: 1;
+}
+
+.layout-symbols .kbd-row-bottom .key-mode {
+  flex: 1.05;
+}
+
+.layout-symbols .kbd-row-bottom .key-ctrl {
+  flex: 1.1;
+}
+
+.layout-symbols .kbd-row-bottom .key-shift {
+  flex: 1.15;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.layout-symbols .kbd-row-bottom .key-space {
+  flex: 1.8;
+}
+
+.layout-symbols .kbd-row-bottom .key-del {
+  flex: 1.05;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.layout-symbols .kbd-row-bottom .key-enter {
+  flex: 1.25;
 }
 
 .key-char-box {
@@ -344,17 +339,59 @@
 
 @media (max-height: 500px) {
   :root {
-    --kbd-total-height: 156px;
+    --kbd-total-height: calc(156px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .kbd-row {
+    gap: 3px;
   }
 
   .kbd-key {
-    height: 32px;
+    height: 33px;
     font-size: 13px;
+  }
+
+  .layout-qwerty,
+  .layout-symbols {
+    gap: 3px;
+  }
+
+  .layout-qwerty .kbd-key {
+    height: 33px;
+  }
+
+  .layout-symbols .kbd-row {
+    gap: 3px;
+  }
+
+  .layout-symbols .kbd-key,
+  .layout-symbols .kbd-row-nav .kbd-key {
+    height: 26px;
+    font-size: 12px;
+  }
+
+  .layout-symbols .key-arrow {
+    font-size: 15px;
+  }
+
+  .layout-symbols .key-nav,
+  .layout-symbols .key-esc,
+  .layout-symbols .key-tab,
+  .layout-symbols .key-tmux,
+  .layout-symbols .key-ctrl,
+  .layout-symbols .key-shift,
+  .layout-symbols .key-del {
+    font-size: 11px;
   }
 
   .key-main-label {
     font-size: 14px;
     line-height: 15px;
+  }
+
+  .layout-symbols .key-main-label {
+    font-size: 12px;
+    line-height: 13px;
   }
 
   .key-sub-label {
@@ -366,33 +403,6 @@
     height: 34px;
     width: 32px;
     font-size: 16px;
-  }
-
-  .layout-qwerty,
-  .layout-symbols {
-    gap: 3px;
-  }
-
-  .layout-symbols {
-    --kbd-arrow-width: 39px;
-    --kbd-arrow-height: 30px;
-  }
-
-  .kbd-row {
-    gap: 3px;
-  }
-
-  .layout-symbols .kbd-key,
-  .layout-symbols .kbd-row-arrows .key-tab,
-  .layout-symbols .kbd-row-arrows .key-backspace,
-  .layout-symbols .kbd-row-arrows .key-nav,
-  .layout-symbols .kbd-row-symbols-3 .key-symbol,
-  .layout-symbols .kbd-row-symbols-3 .key-nav,
-  .layout-symbols .key-del,
-  .layout-symbols .key-shift,
-  .layout-symbols .key-space {
-    height: 30px;
-    font-size: 13px;
   }
 }
 
